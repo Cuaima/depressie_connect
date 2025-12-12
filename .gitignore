@@ -28,6 +28,7 @@ pip-wheel-metadata/
 
 # Data files and folders (exclude all data)
 data/
+output/
 datasets/
 raw_data/
 processed_data/
