@@ -1,0 +1,103 @@
+# VS Code settings
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+.venv/
+.conda/
+envs/
+
+# Pip/Poetry/Pipenv artifacts
+Pipfile.lock
+poetry.lock
+pip-wheel-metadata/
+
+# macOS
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints
+# Hide notebook checkpoints and outputs
+*.nbconvert.ipynb
+
+# Data files and folders (exclude all data)
+data/
+datasets/
+raw_data/
+processed_data/
+data_raw/
+data_processed/
+*/data/
+*/datasets/
+*.csv
+*.tsv
+*.parquet
+*.feather
+*.h5
+*.hdf5
+*.sqlite
+*.db
+*.db3
+*.zip
+*.tar.gz
+*.tgz
+*.bz2
+*.gz
+
+# Model artifacts and large binaries
+models/
+artifacts/
+checkpoints/
+outputs/
+results/
+*.pth
+*.pt
+*.ckpt
+*.model
+*.sav
+*.joblib
+*.onnx
+
+# Logs
+logs/
+*.log
+
+# Build/dist
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Caches and test artifacts
+.cache/
+pytest_cache/
+coverage.xml
+.coverage
+htmlcov/
+
+# Secrets / environment files
+.env
+.env.*
+secrets.yml
+credentials.json
+
+# R artifacts
+.Rhistory
+.Rapp.history
+.RData
+.Rproj.user
+
+# Docker
+docker-compose.override.yml
+docker-compose.*.yml
+
+# IDEs / editors
+.idea/
+*.sublime-workspace
+*.sublime-project

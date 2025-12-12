@@ -1,0 +1,10 @@
+### `CITATION.cff`
+```yaml
+cff-version: 1.0.0
+message: "If you use this software, please cite it as below."
+title: "Depression Connect Project"
+authors:
+  - family-names: "Yanez"
+    given-names: "Claudia"
+date-released: 2025-12-01
+version: "0.1.0"
