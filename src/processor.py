@@ -3,6 +3,9 @@ import re
 import warnings
 import pandas as pd
 from collections import Counter
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import udf
+from pyspark.sql.types import StringType
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 from text_anonymizer import anonymize as ta_anonymize, deanonymize as ta_deanonymize
 
@@ -57,10 +60,12 @@ def anonymize_message_text(df):
     anonymized_texts = []
     mapping_store = []
 
+    print("Anonymizing MessageText column...")
     for text in df["MessageText"].fillna("").astype(str):
         anonymized, mapping = ta_anonymize(text)
         anonymized_texts.append(anonymized)
         mapping_store.append(mapping)
+    print("Anonymization complete.")
 
     df = df.copy()
     df["MessageText"] = anonymized_texts
@@ -68,6 +73,13 @@ def anonymize_message_text(df):
 
     return df, mapping_store
 
+
+def write_cleaned_anonymized_files(dfs):
+    """
+    Write all cleaned and anonymized dataframes to CSV in OUTPUT_DIR.
+    """
+    for name, df in dfs.items():
+        write_csv(df, f"{name}_cleaned_anonymized.csv")
 
 # ----------------------------------------------------------------------
 # Cleaning
@@ -87,11 +99,15 @@ def convert_dates(df):
 def clean_dataframe(df):
     warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
+    print("Cleaning dataframe...")
     df = df.replace(r"^\s*$", pd.NA, regex=True)
     df = df.dropna(how="all").reset_index(drop=True)
 
     if "MessageText" in df.columns:
+        print("Parsing HTML in MessageText...")
         df["MessageText"] = df["MessageText"].astype(str).apply(parse_html)
+        print("Anonymizing MessageText...")
+        df, _ = anonymize_message_text(df)
 
     df = convert_dates(df)
     return df
@@ -105,7 +121,9 @@ def load_data(file_list):
     dfs = {}
     for name in file_list:
         path = os.path.join(DATA_DIR, f"{name}.csv")
+        print(f"Loading {path}...")
         df = read_csv_file(path)
+        print(f"Cleaning {name} dataframe...")
         dfs[name] = clean_dataframe(df)
     return dfs
 
@@ -246,11 +264,19 @@ def top_posters(message_groups, n=100):
 # ----------------------------------------------------------------------
 
 def main():
+    print("Starting processing pipeline...")
     ensure_output_dir()
-
+    
+    print("Loading data...")
     dfs = load_data(CSV_FILES)
+    print("Anonymizing data...")
     anonymize(dfs)
 
+    # Save full cleaned & anonymized CSVs
+    print("Writing cleaned and anonymized files...")
+    write_cleaned_anonymized_files(dfs)
+
+    # Analytics
     posts_per_topic(dfs)
     word_frequency(dfs)
 
