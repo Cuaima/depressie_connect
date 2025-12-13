@@ -70,3 +70,20 @@ To set up the project environment, install dependencies, and run the data proces
    ```bash
    make install
    ```
+
+4. **Prepare your data**:
+   Place your raw CSV files (accounts.csv, groups.csv, topics.csv, messages.csv) in the `data/` directory. If you don't have the data folder, you can create it by running:
+   ```bash
+   mkdir data
+   ```
+5. **Run the data processing pipeline**:
+   ```bash
+   make run
+   ```
+   This will execute the data processing pipeline, generating cleaned and anonymized CSV files in the `output/` directory. It may take some time depending on the size of your dataset.
+
+6. start the API server:
+   ```bash
+   make api
+   ```
+   The API server will be accessible at `http://localhost:8000`.
