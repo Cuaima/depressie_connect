@@ -3,9 +3,6 @@ import re
 import warnings
 import pandas as pd
 from collections import Counter
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import udf
-from pyspark.sql.types import StringType
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 from text_anonymizer import anonymize as ta_anonymize, deanonymize as ta_deanonymize
 
