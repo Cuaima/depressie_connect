@@ -82,8 +82,14 @@ To set up the project environment, install dependencies, and run the data proces
    ```
    This will execute the data processing pipeline, generating cleaned and anonymized CSV files in the `output/` directory. It may take some time depending on the size of your dataset.
 
-6. start the API server:
+6. **start the API server:**
    ```bash
    make api
    ```
-   The API server will be accessible at `http://localhost:8000`.
+   The API server will be accessible at `http://localhost:8000/docs`.
+
+7. **start the Streamlit app:**
+   ```bash
+   streamlit run src/app.py
+   ```
+   The Streamlit app will be accessible at `http://localhost:8501`.
