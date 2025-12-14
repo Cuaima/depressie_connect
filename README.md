@@ -90,6 +90,6 @@ To set up the project environment, install dependencies, and run the data proces
 
 7. **start the Streamlit app:**
    ```bash
-   streamlit run src/app.py
+   make app
    ```
    The Streamlit app will be accessible at `http://localhost:8501`.
