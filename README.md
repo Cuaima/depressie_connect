@@ -1,9 +1,9 @@
 # Depression Connect Pipeline
-This repository contains the code and resources for the Depression Connect Project, which aims to analyze and connect various aspects of depression through data-driven approaches.
-This repository contains a data processing and anonymization pipeline for forum-style datasets (accounts, groups, topics, messages). The pipeline cleans raw CSV data, anonymizes user identifiers and message text, and produces analytics-ready outputs.
+This repository contains the code and resources for the Depression Connect Project, which aims to proccess, and analyze forum-style datasets (accounts, groups, topics, messages). The pipeline cleans raw CSV data, anonymizes user identifiers and message text, and produces analytics-ready outputs. The main branch is `main`. There is also a `dev` branch for developing features.
 
 ## Project Structure
 
+<pre>
 project/
 ├── data/
 │   ├── accounts.csv
@@ -38,6 +38,7 @@ project/
 ├── Dockerfile
 ├── docker-compose.yml
 └── README.md
+<pre>
 
 ## System Requirements
 - Python 3.8 or higher
@@ -83,6 +84,12 @@ To set up the project environment, install dependencies, and run the data proces
    This will execute the data processing pipeline, generating cleaned and anonymized CSV files in the `output/` directory. It may take some time depending on the size of your dataset.
 
 6. **start the API server:**
+> [!WARNING]
+> The API server requires the processed data to be present in the `output/` directory. Ensure you have run the data processing pipeline before starting the API.
+
+> [!IMPORTANT]
+> At this time, the API server only works locally and is not configured for deployment. This feature only exists as a placeholder for future development.
+
    ```bash
    make api
    ```
