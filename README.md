@@ -38,7 +38,7 @@ project/
 ├── Dockerfile
 ├── docker-compose.yml
 └── README.md
-<pre>
+</pre>
 
 ## System Requirements
 - Python 3.8 or higher
