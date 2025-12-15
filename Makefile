@@ -11,6 +11,8 @@ help:
 	@echo "  make install  Install dependencies"
 	@echo "  make run      Run pandas pipeline"
 	@echo "  make spark    Run Spark anonymizer"
+	@echo "  make api       # run FastAPI API server"
+	@echo "  make app      Run Streamlit app"
 	@echo "  make clean    Remove virtual environment"
 
 venv:
@@ -25,6 +27,12 @@ run:
 
 spark:
 	$(PY) src/spark_anonymizer.py
+
+api:
+	uvicorn src.api:app --reload
+
+app:
+	streamlit run src/app.py
 
 clean:
 	rm -rf $(VENV)
