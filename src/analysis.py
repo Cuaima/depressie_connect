@@ -1,74 +1,30 @@
-import os
-import re
 import pandas as pd
 from collections import Counter
-from processor import write_csv, count_ids
+import re
 
-# ----------------------------------------------------------------------
-# Sanity Check
-# ----------------------------------------------------------------------
-
-print("Analysis module loaded.")
-
-# ----------------------------------------------------------------------
-# Configuration
-# ----------------------------------------------------------------------
-
-OUTPUT_DIR = "output"
-ID_COLUMN = "PosterID"
-
-CSV_FILES = ["messages", "topics"]
-
-# ----------------------------------------------------------------------
-# Exploratory data
-# ----------------------------------------------------------------------
-
-
-
-# ----------------------------------------------------------------------
-# Loading utilities
-# ----------------------------------------------------------------------
-    
-
-def load_df(name: str) -> pd.DataFrame:
-    """
-    Load a cleaned & anonymized dataframe from output/.
-    """
-    path = os.path.join(OUTPUT_DIR, f"{name}_account_type_2.0.csv")
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"Missing file: {path}")
-    return pd.read_csv(path)
-
-
-# ----------------------------------------------------------------------
+# --------------------------------------------------
 # Helpers
-# ----------------------------------------------------------------------
+# --------------------------------------------------
 
-def _add_word_and_char_counts(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-    df["word_count"] = (
-        df["MessageText"]
-        .fillna("")
-        .astype(str)
-        .str.split()
-        .str.len()
-    )
-    df["char_count"] = (
-        df["MessageText"]
-        .fillna("")
-        .astype(str)
-        .str.len()
-    )
+def add_word_and_char_counts(messages: pd.DataFrame) -> pd.DataFrame:
+    """
+    Adds word_count and char_count columns.
+    """
+    df = messages.copy()
+
+    text = df["MessageText"].fillna("").astype(str)
+    df["word_count"] = text.str.split().str.len()
+    df["char_count"] = text.str.len()
+
     return df
 
 
-# ----------------------------------------------------------------------
-# Core metrics
-# ----------------------------------------------------------------------
+# --------------------------------------------------
+# Descriptive analytics (Streamlit-friendly)
+# --------------------------------------------------
 
-def words_and_chars_per_user() -> pd.DataFrame:
-    messages = load_df("messages")
-    messages = _add_word_and_char_counts(messages)
+def words_and_chars_per_user(messages: pd.DataFrame) -> pd.DataFrame:
+    messages = add_word_and_char_counts(messages)
 
     return (
         messages
@@ -79,9 +35,8 @@ def words_and_chars_per_user() -> pd.DataFrame:
     )
 
 
-def words_and_chars_per_topic() -> pd.DataFrame:
-    messages = load_df("messages")
-    messages = _add_word_and_char_counts(messages)
+def words_and_chars_per_topic(messages: pd.DataFrame) -> pd.DataFrame:
+    messages = add_word_and_char_counts(messages)
 
     return (
         messages
@@ -92,9 +47,7 @@ def words_and_chars_per_topic() -> pd.DataFrame:
     )
 
 
-def messages_per_topic() -> pd.DataFrame:
-    messages = load_df("messages")
-
+def messages_per_topic(messages: pd.DataFrame) -> pd.DataFrame:
     return (
         messages
         .groupby("ForumTopicID")
@@ -104,9 +57,7 @@ def messages_per_topic() -> pd.DataFrame:
     )
 
 
-def topics_per_user() -> pd.DataFrame:
-    messages = load_df("messages")
-
+def topics_per_user(messages: pd.DataFrame) -> pd.DataFrame:
     return (
         messages
         .groupby("PosterID")["ForumTopicID"]
@@ -116,153 +67,131 @@ def topics_per_user() -> pd.DataFrame:
     )
 
 
-def words_per_user_per_month() -> pd.DataFrame:
-    messages = load_df("messages")
-
+def words_per_user_per_month(messages: pd.DataFrame) -> pd.DataFrame:
     if "PostDate" not in messages.columns:
-        raise ValueError("PostDate column not found in messages")
+        raise ValueError("PostDate column missing")
 
-    messages["PostDate"] = pd.to_datetime(
-        messages["PostDate"], errors="coerce"
-    )
+    df = messages.copy()
+    df["PostDate"] = pd.to_datetime(df["PostDate"], errors="coerce")
+    df = df.dropna(subset=["PostDate"])
 
-    messages = messages.dropna(subset=["PostDate"])
-    messages = _add_word_and_char_counts(messages)
-
-    messages["year_month"] = messages["PostDate"].dt.to_period("M").astype(str)
+    df = add_word_and_char_counts(df)
+    df["year_month"] = df["PostDate"].dt.to_period("M").astype(str)
 
     return (
-        messages
+        df
         .groupby(["PosterID", "year_month"])["word_count"]
         .sum()
         .reset_index()
         .sort_values(["PosterID", "year_month"])
     )
 
-# ----------------------------------------------------------------------
-# Older Analytics
-# ----------------------------------------------------------------------
 
-def top(dfs, id_column=ID_COLUMN):
-    counts = count_ids(dfs, id_column)
-    top_100 = counts.most_common(100)
-    top_100_df = pd.DataFrame(top_100, columns=["AnonymizedID", "Count"])
-    return top_100_df
+def add_rolling_average(
+    df: pd.DataFrame,
+    group_cols: list[str],
+    time_col: str,
+    value_col: str,
+    window: int = 3,
+) -> pd.DataFrame:
+    """
+    Adds a rolling average column to a time series dataframe.
+    """
+    out = []
 
+    for _, g in df.groupby(group_cols):
+        g = g.sort_values(time_col)
+        g[f"{value_col}_rolling_{window}"] = (
+            g[value_col]
+            .rolling(window=window, min_periods=1)
+            .mean()
+        )
+        out.append(g)
 
-def posts_per_topic(dfs):
-    if "topics" not in dfs or "messages" not in dfs:
-        return None
-
-    topics = dfs["topics"]
-    messages = dfs["messages"]
-
-    if "ForumTopicID" not in topics.columns or "ForumTopicID" not in messages.columns:
-        return None
-
-    counts = messages["ForumTopicID"].value_counts().reset_index()
-    counts.columns = ["ForumTopicID", "PostCount"]
-
-    merged = topics.merge(counts, on="ForumTopicID", how="left")
-    merged["PostCount"] = merged["PostCount"].fillna(0).astype(int)
-    merged = merged.sort_values("PostCount", ascending=False)
-
-    return merged
+    return pd.concat(out, ignore_index=True)
 
 
-def word_frequency(dfs):
-    messages = dfs.get("messages")
-    if messages is None or "MessageText" not in messages.columns:
-        return None
+def words_per_account_type_per_month(
+    messages_by_type: dict[str, pd.DataFrame]
+) -> pd.DataFrame:
+    rows = []
+
+    for acc_type, messages in messages_by_type.items():
+        df = messages.copy()
+        df["PostDate"] = pd.to_datetime(df["PostDate"], errors="coerce")
+        df = df.dropna(subset=["PostDate"])
+
+        df["year_month"] = df["PostDate"].dt.to_period("M").astype(str)
+        df["word_count"] = df["MessageText"].fillna("").astype(str).str.split().str.len()
+
+        agg = (
+            df
+            .groupby("year_month")["word_count"]
+            .sum()
+            .reset_index()
+        )
+        agg["AccountType"] = acc_type
+        rows.append(agg)
+
+    return pd.concat(rows, ignore_index=True)
+
+# ------------------------------------------------------
+# text features
+# ------------------------------------------------------
+def most_common_words(
+    messages: pd.DataFrame,
+    top_n: int = 50,
+    min_length: int = 2,
+    lowercase: bool = True,
+    remove_stopwords: bool = False,
+    stopwords: set[str] = None,
+) -> pd.DataFrame:
+    """
+    Returns the top N most common words in the messages.
+
+    Args:
+        messages: DataFrame with a 'MessageText' column.
+        top_n: Number of words to return.
+        min_length: Minimum word length to include.
+        lowercase: Convert words to lowercase.
+        remove_stopwords: Whether to remove common stopwords.
+        stopwords: Set of stopwords to remove if remove_stopwords=True.
+    """
+    if "MessageText" not in messages.columns:
+        raise ValueError("MessageText column not found")
 
     words = []
+
     for text in messages["MessageText"].dropna().astype(str):
-        tokens = text.split()
-        tokens = [re.sub(r"[^\w\s]", "", w).lower() for w in tokens if w]
+        # Remove punctuation
+        tokens = re.findall(r"\b\w+\b", text)
+        if lowercase:
+            tokens = [t.lower() for t in tokens]
+        # Filter by length
+        tokens = [t for t in tokens if len(t) >= min_length]
+        # Remove stopwords if needed
+        if remove_stopwords and stopwords is not None:
+            tokens = [t for t in tokens if t not in stopwords]
         words.extend(tokens)
 
     counter = Counter(words)
-    freq_df = pd.DataFrame(counter.items(), columns=["Word", "Count"])
-    freq_df = freq_df.sort_values("Count", ascending=False)
+    top_words = counter.most_common(top_n)
 
-    return freq_df
-
-
-def split_by_account_type(df, column, prefix):
-    result = {}
-    for value in df[column].dropna().unique():
-        subset = df[df[column] == value]
-        write_csv(subset, f"{prefix}_{value}.csv")
-        result[value] = subset
-    return result
+    return pd.DataFrame(top_words, columns=["Word", "Count"])
 
 
-def split_topics_by_groups(groups_by_type, topics_df):
-    result = {}
-    for acc_type, gdf in groups_by_type.items():
-        group_ids = gdf["ForumGroupID"].unique()
-        subset = topics_df[topics_df["ForumGroupID"].isin(group_ids)]
-        write_csv(subset, f"topics_account_type_{acc_type}.csv")
-        result[acc_type] = subset
-    return result
+# --------------------------------------------------
+# Aggregated analytics bundle (for Streamlit)
+# --------------------------------------------------
 
-
-def split_messages_by_topics(topics_by_type, messages_df):
-    result = {}
-    for acc_type, tdf in topics_by_type.items():
-        topic_ids = tdf["ForumTopicID"].unique()
-        subset = messages_df[messages_df["ForumTopicID"].isin(topic_ids)]
-        write_csv(subset, f"messages_account_type_{acc_type}.csv")
-        result[acc_type] = subset
-    return result
-
-
-def top_posters(message_groups, n=100):
-    for acc_type, df in message_groups.items():
-        if "PosterID" not in df.columns:
-            continue
-        top_n = df["PosterID"].value_counts().head(n).reset_index()
-        top_n.columns = ["PosterID", "PostCount"]
-        write_csv(top_n, f"top_{n}_posters_account_type_{acc_type}.csv")
-    return None
-
-# This is the code that used to live under Main to run the older Analytics:
-
-    # posts_per_topic(dfs)
-    # word_frequency(dfs)
-
-    # groups = dfs.get("groups")
-    # topics = dfs.get("topics")
-    # messages = dfs.get("messages")
-
-    # if groups is None or topics is None or messages is None:
-    #     return
-
-    # groups_by_type = split_by_account_type(groups, "AccountID", "groups_account_type")
-    # topics_by_type = split_topics_by_groups(groups_by_type, topics)
-    # messages_by_type = split_messages_by_topics(topics_by_type, messages)
-
-    # top_posters(messages_by_type)
-
-# ----------------------------------------------------------------------
-# Batch runner
-# ----------------------------------------------------------------------
-
-def run_all(save: bool = True):
-    results = {
-        "words_chars_per_user.csv": words_and_chars_per_user(),
-        "words_chars_per_topic.csv": words_and_chars_per_topic(),
-        "messages_per_topic.csv": messages_per_topic(),
-        "topics_per_user.csv": topics_per_user(),
-        "words_per_user_per_month.csv": words_per_user_per_month(),
+def compute_all_metrics(messages: pd.DataFrame) -> dict[str, pd.DataFrame]:
+    """
+    Returns a dictionary of analytics tables.
+    """
+    return {
+        "words_chars_per_user": words_and_chars_per_user(messages),
+        "words_chars_per_topic": words_and_chars_per_topic(messages),
+        "messages_per_topic": messages_per_topic(messages),
+        "topics_per_user": topics_per_user(messages),
+        "words_per_user_per_month": words_per_user_per_month(messages),
     }
-
-    if save:
-        for name, df in results.items():
-            write_csv(df, name)
-
-    return results
-
-
-if __name__ == "__main__":
-    run_all()
