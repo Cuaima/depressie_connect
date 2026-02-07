@@ -3,12 +3,11 @@ import pandas as pd
 
 DATA_DIR = "data"
 OUTPUT_DIR = "output"
-ACCOUNT_TYPE = 1
-ACOOUNT_TYPE_B = 4
 
-# Adjust these if your column names differ
-TOPIC_TEXT_COLUMN = "Name"
+ACCOUNTS = [1, 4]
+
 MESSAGE_TEXT_COLUMN = "MessageText"
+DATE_COLUMN = "PostDate"
 
 
 def main():
@@ -28,83 +27,106 @@ def main():
         topics
         .merge(groups, on="ForumGroupID", how="left")
         .dropna(subset=["AccountID"])
+        .drop_duplicates("ForumTopicID")
         .set_index("ForumTopicID")["AccountID"]
         .to_dict()
     )
 
-    # --------------------------------------------------
-    # Identify users who posted in AccountID = 1
-    # --------------------------------------------------
-
     messages["AccountID"] = messages["ForumTopicID"].map(topic_to_account)
 
-    posters_in_type_1 = set(
-        messages.loc[
-            messages["AccountID"] == ACCOUNT_TYPE,
-            "PosterID"
-        ].dropna()
+    # --------------------------------------------------
+    # Identify posters active in selected account types
+    # --------------------------------------------------
+
+    superuser_posters = set()
+
+    for acc in ACCOUNTS:
+        posters = set(
+            messages.loc[
+                messages["AccountID"] == acc,
+                "PosterID"
+            ].dropna()
+        )
+        print(f"Found {len(posters)} posters active in account type {acc}")
+        superuser_posters.update(posters)
+
+    # --------------------------------------------------
+    # Filter messages to those posters
+    # --------------------------------------------------
+
+    messages = messages[
+        messages["PosterID"].isin(superuser_posters)
+    ].copy()
+
+    # Ensure datetime
+    messages[DATE_COLUMN] = pd.to_datetime(
+        messages[DATE_COLUMN],
+        errors="coerce"
     )
 
-    print(f"Found {len(posters_in_type_1)} posters active in account type {ACCOUNT_TYPE}")
+    messages = messages.dropna(subset=[MESSAGE_TEXT_COLUMN, DATE_COLUMN])
 
     # --------------------------------------------------
-    # Filter messages by those users
+    # Identify oldest message per topic → "topic"
     # --------------------------------------------------
 
-    message_rows = (
-        messages[
-            messages["PosterID"].isin(posters_in_type_1)
-        ][MESSAGE_TEXT_COLUMN]
-        .dropna()
-        .astype(str)
-        .tolist()
-    )
-
-    message_df = pd.DataFrame({
-        "text": message_rows,
-        "label": "message"
-    })
-
-    # --------------------------------------------------
-    # Filter topics by those users
-    # --------------------------------------------------
-
-    topic_rows = (
-        topics[
-            topics["PosterID"].isin(posters_in_type_1)
-        ][TOPIC_TEXT_COLUMN]
-        .dropna()
-        .astype(str)
-        .tolist()
+    oldest_messages = (
+    messages
+    .sort_values(DATE_COLUMN)
+    .groupby("ForumTopicID")
+    .head(1)
     )
 
     topic_df = pd.DataFrame({
-        "text": topic_rows,
+        "text": oldest_messages[MESSAGE_TEXT_COLUMN].astype(str),
         "label": "topic"
     })
 
     # --------------------------------------------------
-    # Combine into final dataset
+    # Remaining messages → "message"
+    # --------------------------------------------------
+
+    oldest_message_ids = set(oldest_messages.index)
+
+    message_df = (
+        messages
+        .drop(index=oldest_messages.index)
+        .assign(label="message")
+        .rename(columns={MESSAGE_TEXT_COLUMN: "text"})[
+            ["text", "label"]
+        ]
+    )
+
+    # --------------------------------------------------
+    # Combine & clean
     # --------------------------------------------------
 
     dataset = (
         pd.concat([topic_df, message_df], ignore_index=True)
-        .drop_duplicates()
-        .reset_index(drop=True)
+        .dropna(subset=["text"])
     )
 
+    dataset["text"] = dataset["text"].astype(str).str.strip()
+    dataset = dataset[dataset["text"] != ""]
+
+    dataset = dataset.drop_duplicates().reset_index(drop=True)
+
+    # --------------------------------------------------
+    # Output
+    # --------------------------------------------------
+
     print("Final dataset shape:", dataset.shape)
+    print(dataset["label"].value_counts())
     print(dataset.head())
 
-    # print number of samples with empty text
-    empty_text_count = dataset[dataset["text"].str.strip() == ""].shape[0]
-    print(f"Number of samples with empty text: {empty_text_count}")
-
-    # create a csv file
-    dataset.to_csv(os.path.join(OUTPUT_DIR, "classification_dataset.csv"), index=False)
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    dataset.to_csv(
+        os.path.join(OUTPUT_DIR, "classification_dataset.csv"),
+        index=False
+    )
 
     return dataset
 
 
 if __name__ == "__main__":
-    dataset = main()
+    main()
