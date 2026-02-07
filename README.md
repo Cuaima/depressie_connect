@@ -67,35 +67,54 @@ To set up the project environment, install dependencies, and run the data proces
    cd depressie_connect_project
    ```
 
-3. **Create a virtual environment and install dependencies**:
+## Commands for Git
+- To check the status of your repository:
+   ```bash
+   git status
+   ```
+- To add changes to the staging area:
+   ```bash
+   git add <file_name>
+   ```
+- To commit changes with a message:
+   ```bash
+   git commit -m "Your commit message here"
+   ```
+- To push changes to the remote repository:
+   ```bash
+   git push origin <branch_name>
+   ```
+- To pull the latest changes from the remote repository:
+   ```bash
+   git pull origin <branch_name>
+   ```
+- To create a new branch:
+   ```bash
+   git checkout -b <new_branch_name>
+   ```
+- To switch to an existing branch:
+   ```bash
+   git checkout <branch_name>
+   ```
+
+## Running the Pipeline
+1. **Create a virtual environment and install dependencies**:
    ```bash
    make install
    ```
 
-4. **Prepare your data**:
+2. **Prepare your data**:
    Place your raw CSV files (accounts.csv, groups.csv, topics.csv, messages.csv) in the `data/` directory. If you don't have the data folder, you can create it by running:
    ```bash
    mkdir data
    ```
-5. **Run the data processing pipeline**:
+3. **Run the data processing pipeline**:
    ```bash
    make run
    ```
    This will execute the data processing pipeline, generating cleaned and anonymized CSV files in the `output/` directory. It may take some time depending on the size of your dataset.
 
-6. **start the API server:**
-> [!WARNING]
-> The API server requires the processed data to be present in the `output/` directory. Ensure you have run the data processing pipeline before starting the API.
-
-> [!IMPORTANT]
-> At this time, the API server only works locally and is not configured for deployment. This feature only exists as a placeholder for future development.
-
-   ```bash
-   make api
-   ```
-   The API server will be accessible at `http://localhost:8000/docs`.
-
-7. **start the Streamlit app:**
+4. **start the Streamlit app:**
    ```bash
    make app
    ```
