@@ -51,17 +51,13 @@ def anonymize_text_column(df, column):
     if column not in df.columns:
         return df
 
-    texts = []
-    maps = []
-
+    anonymized = []
     for text in df[column].fillna("").astype(str):
-        anonymized, mapping = ta_anonymize(text)
-        texts.append(anonymized)
-        maps.append(mapping)
+        anon, _ = ta_anonymize(text)
+        anonymized.append(anon)
 
     df = df.copy()
-    df[column] = texts
-    df[f"_{column}_AnonymizationMap"] = maps
+    df[column] = anonymized
     return df
 
 
