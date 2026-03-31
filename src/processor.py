@@ -2,7 +2,8 @@ import os
 import warnings
 import pandas as pd
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
-from text_anonymizer import anonymize as ta_anonymize
+from config import TEXT_COLUMNS_TO_CLEAN
+from custom_text_anonymizer import anonymize as ta_anonymize
 
 print("Processor module loaded.")
 
@@ -116,7 +117,8 @@ def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
     # Strip HTML
     for col in df.columns:
-        df[col] = df[col].astype(str).apply(parse_html)
+        if col in TEXT_COLUMNS_TO_CLEAN:
+            df[col] = df[col].astype(str).apply(parse_html)
 
     # Anonymize text columns
     if ANONYMIZE_TEXT:

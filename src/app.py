@@ -23,18 +23,10 @@ st.title("Depression Connect – Exploratory Analysis")
 @st.cache_data
 def load_messages(account_type: str = "2.0") -> pd.DataFrame:
     """
-    Load cleaned & anonymized messages for a given account type.
+    Load cleaned & anonymized messages.
     """
-    path = f"output/messages_account_type_{account_type}.csv"
-    return pd.read_csv(path)
+    return pd.read_csv("output/messages_community.csv")  # single file for all community accounts
 
-
-@st.cache_data
-def load_messages_by_type(types=("2.0", "3.0")):
-    return {
-        acc: pd.read_csv(f"output/messages_account_type_{acc}.csv")
-        for acc in types
-    }
 
 
 @st.cache_data
@@ -51,12 +43,6 @@ def load_metrics(messages: pd.DataFrame) -> dict[str, pd.DataFrame]:
 
 st.sidebar.header("Controls")
 
-account_type = st.sidebar.selectbox(
-    "Account type",
-    options=["2.0", "3.0"],
-    index=0,
-)
-
 view = st.sidebar.radio(
     "Select view",
     [
@@ -69,7 +55,6 @@ view = st.sidebar.radio(
     ],
 )
 
-comparison_view = st.sidebar.checkbox("Compare account types")
 rolling_window = st.sidebar.slider(
     "Rolling average window (months)",
     min_value=1,
@@ -81,7 +66,8 @@ rolling_window = st.sidebar.slider(
 # Load data once
 # --------------------------------------------------
 
-messages = load_messages(account_type)
+messages = load_messages()
+
 metrics = load_metrics(messages)
 
 # --------------------------------------------------
@@ -183,30 +169,4 @@ def rolling_words_per_user_per_month(
         time_col="year_month",
         value_col="word_count",
         window=window,
-    )
-
-
-if comparison_view:
-    st.header("Account Type Comparison – Monthly Word Volume")
-
-    messages_by_type = load_messages_by_type()
-
-    monthly = words_per_account_type_per_month(messages_by_type)
-
-    monthly = add_rolling_average(
-        df=monthly,
-        group_cols=["AccountType"],
-        time_col="year_month",
-        value_col="word_count",
-        window=rolling_window,
-    )
-
-    st.dataframe(monthly)
-
-    st.line_chart(
-        monthly.pivot(
-            index="year_month",
-            columns="AccountType",
-            values=f"word_count_rolling_{rolling_window}",
-        )
     )
