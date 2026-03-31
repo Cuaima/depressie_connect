@@ -1,4 +1,4 @@
-import text_anonymizer
+import custom_text_anonymizer
 import importlib
 import inspect
 
@@ -32,7 +32,7 @@ except ImportError as e:
 import os
 
 # Get package directory
-package_dir = os.path.dirname(inspect.getfile(text_anonymizer))
+package_dir = os.path.dirname(inspect.getfile(custom_text_anonymizer))
 print(f"Package directory: {package_dir}")
 
 # Read the main __init__.py
