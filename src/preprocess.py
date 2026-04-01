@@ -349,7 +349,7 @@ def anonymize_text_columns(df: pd.DataFrame, columns: list[str] | None = None) -
     return df
 
 
-# ── Step 9: Save per-account outputs ─────────────────────────────────────────
+# ── Step 9: Save outputs ─────────────────────────────────────────
 
 def save_outputs(messages: pd.DataFrame, topic_to_account: dict):
     messages = messages.copy()
