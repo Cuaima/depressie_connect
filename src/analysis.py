@@ -111,30 +111,6 @@ def add_rolling_average(
     return pd.concat(out, ignore_index=True)
 
 
-def words_per_account_type_per_month(
-    messages_by_type: dict[str, pd.DataFrame]
-) -> pd.DataFrame:
-    rows = []
-
-    for acc_type, messages in messages_by_type.items():
-        df = messages.copy()
-        df["PostDate"] = pd.to_datetime(df["PostDate"], errors="coerce")
-        df = df.dropna(subset=["PostDate"])
-
-        df["year_month"] = df["PostDate"].dt.to_period("M").astype(str)
-        df["word_count"] = df["MessageText"].fillna("").astype(str).str.split().str.len()
-
-        agg = (
-            df
-            .groupby("year_month")["word_count"]
-            .sum()
-            .reset_index()
-        )
-        agg["AccountType"] = acc_type
-        rows.append(agg)
-
-    return pd.concat(rows, ignore_index=True)
-
 # ------------------------------------------------------
 # text features
 # ------------------------------------------------------
