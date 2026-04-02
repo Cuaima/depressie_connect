@@ -4,7 +4,6 @@
 
 import streamlit as st
 import pandas as pd
-from analysis import compute_all_metrics, most_common_words
 from exploration import (
     load_messages,
     posts_per_user, posts_per_user_stats,
@@ -15,6 +14,12 @@ from exploration import (
     posts_by_hour, posts_by_day_of_week, posts_by_month,
     top_users,
     ik_statistics,
+)
+from analysis import (
+    compute_all_metrics,
+    add_rolling_average,
+    words_per_user_per_month,
+    most_common_words,
 )
 
 # ── Page config ───────────────────────────────────────────────────────────────
@@ -54,6 +59,13 @@ view = st.sidebar.radio(
         "IK Usage",
         "Most Common Words",
     ],
+)
+
+rolling_window = st.sidebar.slider(
+    "Rolling average window (months)",
+    min_value=1,
+    max_value=12,
+    value=3,
 )
 
 # ── Helper to display mean / median / mode ────────────────────────────────────
@@ -213,3 +225,26 @@ elif view == "Most Common Words":
     df = most_common_words(messages, top_n=top_n, remove_stopwords=remove_sw, stopwords=stopwords)
     st.bar_chart(df.set_index("Word")["Count"])
     st.dataframe(df, use_container_width=True)
+
+elif view == "Words per User per Month":
+    st.header("Words per User per Month")
+
+    df = metrics["words_per_user_per_month"]
+    users = sorted(df["PosterID"].unique())
+    selected_user = st.selectbox("Select user", users)
+
+    user_df = df[df["PosterID"] == selected_user]
+
+    # Apply rolling average from sidebar slider
+    user_df = add_rolling_average(
+        df=user_df,
+        group_cols=["PosterID"],
+        time_col="year_month",
+        value_col="word_count",
+        window=rolling_window,
+    )
+
+    st.dataframe(user_df, use_container_width=True)
+    st.line_chart(user_df.set_index("year_month")[[
+        "word_count", f"word_count_rolling_{rolling_window}"
+    ]])
