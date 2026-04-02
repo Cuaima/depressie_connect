@@ -2,7 +2,7 @@ import os
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import udf, col
 from pyspark.sql.types import StringType
-from text_anonymizer import anonymize as ta_anonymize
+from custom_text_anonymizer import anonymize as ta_anonymize
 
 
 DATA_DIR = "data"
