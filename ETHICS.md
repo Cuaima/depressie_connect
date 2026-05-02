@@ -56,7 +56,7 @@
     [^9]: The primary affected parties are forum users posting in vulnerable states, the platform moderators who may act on model outputs, and the managing mental health organization. Results and the model card are shared with the platform operator prior to any application. The thesis explicitly recommends that any deployment of automated flagging include human moderator oversight and a clear user-facing mechanism to contest automated decisions.
 
 *Data Science Ethics Checklist generated with [deon](http://deon.drivendata.org).*
-*Additional items (A.5–A.7, B.4–B.5, C.6–C.8, D.6–D.8, E.5–E.6) derived from:*
+*Additional items (A.5–A.6, B.4–B.6, C.6–C.7, D.6–D.7, E.5–E.6) derived from:*
 
  - *Kapoor et al. (2024). REFORMS: Consensus-based Recommendations for Machine-learning-based Science. Science Advances, 10, eadk3452.*
  - *Mitchell et al. (2019). Model Cards for Model Reporting. Proceedings of FAccT 2019.*

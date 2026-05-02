@@ -74,7 +74,20 @@ def write_csv(df: pd.DataFrame, filename: str):
 
 def load_raw_data() -> dict[str, pd.DataFrame]:
     print("\n[1] Loading raw data…")
-    return {name: read_csv(name) for name in CSV_FILES}
+    dfs = {}
+    # Load integrated messages if it exists, fall back to raw
+    integrated_path = os.path.join(OUTPUT_DIR, "integrated_messages.csv")
+    if os.path.exists(integrated_path):
+        print(f"  Loading integrated messages from {integrated_path}")
+        dfs["messages"] = pd.read_csv(integrated_path, on_bad_lines="skip")
+    else:
+        dfs["messages"] = read_csv("messages")
+
+    # Topics, groups and accounts still come from raw
+    for name in ["topics", "groups", "accounts"]:
+        dfs[name] = read_csv(name)
+
+    return dfs
 
 
 # ── Step 2: Build topic → account mapping ────────────────────────────────────
@@ -351,60 +364,67 @@ def anonymize_text_columns(df: pd.DataFrame, columns: list[str] | None = None) -
 
 # ── Step 9: Save outputs ─────────────────────────────────────────
 
+# AFTER
 def save_outputs(messages: pd.DataFrame, topic_to_account: dict):
     messages = messages.copy()
-    print("  Sample ForumTopicIDs in messages:", messages["ForumTopicID"].head().tolist())
-    print("  Sample keys in topic_to_account: ", list(topic_to_account.keys())[:5])
+    integrated_path = os.path.join(OUTPUT_DIR, "integrated_messages.csv")
 
-    # strip the .0 float suffix that clean_dataframe introduces on ID columns
+    if os.path.exists(integrated_path):
+        # Integrated data is already filtered to community accounts
+        community = messages
+    else:
+        # Original flow — filter by account type
+        topic_to_account_str = {str(int(float(k))): v for k, v in topic_to_account.items()}
+        messages["AccountID"] = (
+            messages["ForumTopicID"]
+            .apply(lambda x: str(int(float(x))) if pd.notna(x) else None)
+            .map(topic_to_account_str)
+        )
+        matched = messages["AccountID"].notna().sum()
+        print(f"  Matched {matched}/{len(messages)} messages to an account.")
+        community = messages[
+            messages["AccountID"].isin(COMMUNITY_ACCOUNT_IDS)
+        ].drop(columns=["AccountID"])
 
-    # Normalize both sides to string to survive clean_dataframe transformations
-    topic_to_account_str = {str(int(float(k))): v for k, v in topic_to_account.items()}
-    messages["AccountID"] = (
-        messages["ForumTopicID"]
-        .apply(lambda x: str(int(float(x))) if pd.notna(x) else None)
-        .map(topic_to_account_str)
-    )
-
-    matched = messages["AccountID"].notna().sum()
-    print(f"  Matched {matched}/{len(messages)} messages to an account.")
-
-    community = messages[
-        messages["AccountID"].isin(COMMUNITY_ACCOUNT_IDS)
-                         ]
-    
     write_csv(community, "messages_community.csv")
     print(f"  Wrote {len(community)} messages → messages_community.csv")
 
 
 # ── Main pipeline ─────────────────────────────────────────────────────────────
 
+# AFTER
 def run_pipeline():
     ensure_output_dir()
+
+    integrated_path = os.path.join(OUTPUT_DIR, "integrated_messages.csv")
+    using_integrated = os.path.exists(integrated_path)
 
     # 1. Load
     dfs = load_raw_data()
 
     # 2. Build maps
     print("\n[2] Building topic → account map…")
-    raw_topics = pd.read_csv(os.path.join(DATA_DIR, "topics.csv"), on_bad_lines="warn")
-    raw_groups = pd.read_csv(os.path.join(DATA_DIR, "groups.csv"), on_bad_lines="warn")
-    topic_to_account, topic_to_group = build_topic_account_map(
-        {"topics": raw_topics, "groups": raw_groups}
-    )
-    dfs = load_raw_data()  # reload to ensure we have the original unfiltered messages for superuser detection
+    raw_topics = pd.read_csv(os.path.join(DATA_DIR, "topics.csv"))
+    raw_groups = pd.read_csv(os.path.join(DATA_DIR, "groups.csv"))
+    topic_to_account, topic_to_group = build_topic_account_map({
+        "topics": raw_topics,
+        "groups": raw_groups,
+    })
 
-    # 3. Superuser removal
-    print("\n[3] Identifying superusers…")
-    superuser_ids = get_superuser_ids(dfs["messages"], topic_to_account)
-    dfs["messages"] = remove_superusers(dfs["messages"], superuser_ids)
+    if using_integrated:
+        print("\n[3] Skipping superuser removal — already applied in integrate_datasets.py")
+        print("\n[4] Skipping intro group removal — already applied in integrate_datasets.py")
+    else:
+        # 3. Superuser removal
+        print("\n[3] Identifying superusers…")
+        superuser_ids = get_superuser_ids(dfs["messages"], topic_to_account)
+        dfs["messages"] = remove_superusers(dfs["messages"], superuser_ids)
 
-    # 4. Remove intro/welcome threads
-    print("\n[4] Removing intro/welcome groups…")
-    intro_topic_ids = get_intro_topic_ids(topic_to_group)
-    dfs["messages"] = remove_intro_topics(dfs["messages"], intro_topic_ids)
-    dfs["topics"]   = dfs["topics"][~dfs["topics"]["ForumTopicID"].isin(intro_topic_ids)].copy()
-    print(f"  Removed intro topics from topics table: {len(dfs['topics'])} remaining.")
+        # 4. Remove intro/welcome threads
+        print("\n[4] Removing intro/welcome groups…")
+        intro_topic_ids = get_intro_topic_ids(topic_to_group)
+        dfs["messages"] = remove_intro_topics(dfs["messages"], intro_topic_ids)
+        dfs["topics"]   = dfs["topics"][~dfs["topics"]["ForumTopicID"].isin(intro_topic_ids)].copy()
 
     # 5. Clean all DataFrames
     print("\n[5] Cleaning dataframes (HTML, dates, quote stripping)…")
