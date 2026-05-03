@@ -218,6 +218,45 @@ def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def standardize_text(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Applies post-cleaning text standardization to TEXT_COLUMN.
+    Keeps original in MessageText, adds MessageText_normalized for model use.
+    """
+    if TEXT_COLUMN not in df.columns:
+        return df
+
+    df = df.copy()
+    text = df[TEXT_COLUMN].fillna("").astype(str)
+
+    # ── Remove anonymization placeholders ─────────────────────────────────────
+    # Matches patterns like [ENTITY_PERSON_1], [ENTITY_LOCATION_2], etc.
+    text = text.apply(lambda t: re.sub(r"\[ENTITY_[A-Z_]+_\d+\]", "", t))
+
+    # ── Remove URLs ───────────────────────────────────────────────────────────
+    text = text.apply(lambda t: re.sub(r"https?://\S+|www\.\S+", "", t))
+
+    # ── Normalize repeated punctuation ────────────────────────────────────────
+    text = text.apply(lambda t: re.sub(r"([!?.]){2,}", r"\1", t))
+
+    # ── Collapse newlines and tabs into single space ──────────────────────────
+    text = text.apply(lambda t: re.sub(r"[\r\n\t]+", " ", t))
+
+    # ── Collapse multiple spaces ──────────────────────────────────────────────
+    text = text.apply(lambda t: re.sub(r" {2,}", " ", t))
+
+    # ── Strip leading/trailing whitespace ────────────────────────────────────
+    text = text.str.strip()
+
+    # ── Write normalized version (lowercased) to separate column ─────────────
+    df[f"{TEXT_COLUMN}_normalized"] = text.str.lower()
+
+    # ── Update original column with everything except lowercasing ────────────
+    df[TEXT_COLUMN] = text
+
+    return df
+
+
 # ── Step 6: Text quality filters ──────────────────────────────────────────────
 
 def _word_count(text: str) -> int:
@@ -283,6 +322,9 @@ def anonymize_ids(dfs: dict[str, pd.DataFrame]) -> dict[str, str]:
     )
     print(f"  Anonymized {len(mapping)} unique poster IDs.")
     return mapping
+
+
+
 
 
 # ── Step 8: Text anonymization ───────────────────────────────────────────────
@@ -431,6 +473,10 @@ def run_pipeline():
     for name in dfs:
         dfs[name] = clean_dataframe(dfs[name])
 
+    # 5b. Standardize text
+    print("\n[5b] Standardizing text…")
+    dfs["messages"] = standardize_text(dfs["messages"])
+
     # 6. Text quality filters (messages only)
     print("\n[6] Filtering text quality…")
     dfs["messages"] = filter_text_quality(dfs["messages"])
@@ -444,6 +490,8 @@ def run_pipeline():
         print("\n[8] Anonymizing text…")
         dfs["messages"] = anonymize_text_columns(dfs["messages"], columns=[TEXT_COLUMN])
         dfs["topics"]   = anonymize_text_columns(dfs["topics"], columns=["Name"])
+        # Re-run standardization to clean up any new placeholders
+        dfs["messages"] = standardize_text(dfs["messages"])
 
     # 9. Write cleaned files
     print("\n[9] Saving outputs…")
