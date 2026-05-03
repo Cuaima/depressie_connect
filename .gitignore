@@ -1,6 +1,9 @@
 # VS Code settings
 .vscode/
 
+# Refactring
+jic/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -81,6 +84,7 @@ pytest_cache/
 coverage.xml
 .coverage
 htmlcov/
+*_cache/
 
 # Secrets / environment files
 .env
