@@ -1,6 +1,9 @@
 # VS Code settings
 .vscode/
 
+# liwc
+liwc15.dic
+
 # Refactring
 jic/
 
