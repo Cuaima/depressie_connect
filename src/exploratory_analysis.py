@@ -27,7 +27,6 @@
 from __future__ import annotations
 
 import os
-import sys
 import warnings
 import pandas as pd
 import numpy as np
@@ -36,6 +35,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf as pdf_backend
 from scipy import stats
+
+from utils.CDS import process_dataset
+from utils.thread_utils import label_roles
 
 warnings.filterwarnings("ignore")
 
@@ -46,12 +48,8 @@ CDS_CATEGORY_COLS = [
     "Fortune-telling", "Overgeneralizing", "Personalizing", "Should statements"
 ]
 
-# ── Make sure CDS.py is importable from src/ ─────────────────────────────────
-sys.path.append(os.path.dirname(__file__))
-from CDS import process_dataset
-
 # ── Config ────────────────────────────────────────────────────────────────────
-INPUT_PATH    = "output/messages_community.csv"
+INPUT_PATH    = "output/preprocessed/messages_community.csv"
 OUTPUT_DIR    = "output"
 PDF_PATH      = os.path.join(OUTPUT_DIR, "exploratory_report.pdf")
 CDS_PATH      = os.path.join(OUTPUT_DIR, "cds_scores.csv")
@@ -73,20 +71,11 @@ ALT_GREY  = "#AAAAAA"
 # Data loading and preparation
 # =============================================================================
 
-def load_data() -> pd.DataFrame:
-    df = pd.read_csv(INPUT_PATH)
+def load_data(path: str | None = None) -> pd.DataFrame:
+    df = pd.read_csv(path or INPUT_PATH)
     df[DATE_COL] = pd.to_datetime(df[DATE_COL], errors="coerce")
     df = df.dropna(subset=[DATE_COL, TEXT_COL]).copy()
     print(f"  Loaded {len(df)} messages from {df[POSTER_COL].nunique()} users.")
-    return df
-
-
-def label_roles(df: pd.DataFrame) -> pd.DataFrame:
-    """Labels the first message in each thread as 'post', rest as 'reply'."""
-    df = df.copy().sort_values(DATE_COL)
-    first_idx = df.groupby(TOPIC_COL)[DATE_COL].idxmin()
-    df["role"] = "reply"
-    df.loc[first_idx, "role"] = "post"
     return df
 
 
@@ -586,14 +575,75 @@ def compute_user_cds(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # =============================================================================
+# PDF builder (can write to an existing PdfPages handle for consolidated reports)
+# =============================================================================
+
+def build_pdf(df: pd.DataFrame, pdf_path: str | None = None,
+              pdf=None, include_cover: bool = True):
+    """Write the exploratory analysis section to pdf_path or an existing pdf handle."""
+    if pdf_path is None:
+        pdf_path = PDF_PATH
+
+    def _write(writer):
+        def save(fig):
+            writer.savefig(fig, bbox_inches="tight")
+            plt.close("all")
+
+        if include_cover:
+            save(_cover_page("Depression Connect Forum",
+                             "Exploratory Analysis — Time Series & CDS Prevalence"))
+        else:
+            save(_section_divider("Forum Activity & CDS Prevalence"))
+
+        save(_section_divider("Section 1 — Forum Activity Over Time"))
+        save(fig_messages_per_year(df))
+        save(fig_messages_per_month(df))
+        save(fig_users_topics_per_year(df))
+        save(fig_users_topics_per_month(df))
+        save(fig_volume_by_role_year(df))
+        save(fig_volume_by_role_month(df))
+
+        save(_section_divider("Section 2 — CDS Prevalence Over Time"))
+        save(fig_cds_volume_and_prevalence_month(df))
+        save(fig_cds_prevalence_year(df))
+        save(fig_cds_prevalence_month_by_role(df))
+
+        save(_section_divider("Section 3 — CDS Prevalence by Category"))
+        save(fig_cds_by_category(df))
+
+        save(_section_divider("Section 4 — Within-User CDS Distribution"))
+        save(fig_cds_distribution_kde(df))
+
+        save(_section_divider("Section 5 — CDS per Category Over Time"))
+        save(fig_cds_category_over_time(df, granularity="year"))
+        save(fig_cds_category_over_time(df, granularity="month"))
+
+    if pdf is not None:
+        _write(pdf)
+    else:
+        print(f"Building PDF → {pdf_path}")
+        with pdf_backend.PdfPages(pdf_path) as writer:
+            _write(writer)
+        print(f"  PDF saved → {pdf_path}")
+
+
+# =============================================================================
 # Main
 # =============================================================================
 
-def main():
+_DATASET_SUFFIX = {None: "", "combined": "", "old": "_old", "new_only": "_new_only"}
+
+
+def main(dataset: str | None = None):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
+    suffix        = _DATASET_SUFFIX.get(dataset, "")
+    input_path    = f"output/preprocessed/messages_community{suffix}.csv"
+    pdf_path_out  = os.path.join(OUTPUT_DIR, f"exploratory_report{suffix}.pdf")
+    cds_path_out  = os.path.join(OUTPUT_DIR, f"cds_scores{suffix}.csv")
+    user_cds_out  = os.path.join(OUTPUT_DIR, f"cds_per_user{suffix}.csv")
 
     print("Loading data…")
-    df = load_data()
+    df = load_data(input_path)
 
     print("\nLabelling thread roles…")
     df = label_roles(df)
@@ -604,74 +654,26 @@ def main():
     print("\nComputing CDS scores…")
     df = compute_cds(df)
 
-    # Save scored messages
-    df.to_csv(CDS_PATH, index=False)
-    print(f"  CDS scores saved → {CDS_PATH}")
+    df.to_csv(cds_path_out, index=False)
+    print(f"  CDS scores saved → {cds_path_out}")
 
-    # Per-user summary
     user_cds = compute_user_cds(df)
-    user_cds.to_csv(USER_CDS_PATH, index=False)
-    print(f"  Per-user CDS saved → {USER_CDS_PATH}")
+    user_cds.to_csv(user_cds_out, index=False)
+    print(f"  Per-user CDS saved → {user_cds_out}")
 
-    # Statistical tests
     run_statistical_tests(df)
 
-    # ── Build PDF ─────────────────────────────────────────────────────────────
-    print(f"\nBuilding PDF → {PDF_PATH}")
-    with pdf_backend.PdfPages(PDF_PATH) as pdf:
-
-        def save(fig):
-            pdf.savefig(fig, bbox_inches="tight")
-            plt.close("all")
-
-        save(_cover_page(
-            "Depression Connect Forum",
-            "Exploratory Analysis — Time Series & CDS Prevalence"
-        ))
-
-        # ── Section 1: Basic activity metrics ────────────────────────────────
-        save(_section_divider("Section 1 — Forum Activity Over Time"))
-        print("  Section 1: activity metrics")
-
-        save(fig_messages_per_year(df))
-        save(fig_messages_per_month(df))
-        save(fig_users_topics_per_year(df))
-        save(fig_users_topics_per_month(df))
-        save(fig_volume_by_role_year(df))
-        save(fig_volume_by_role_month(df))
-
-        # ── Section 2: CDS prevalence over time ──────────────────────────────
-        save(_section_divider("Section 2 — CDS Prevalence Over Time"))
-        print("  Section 2: CDS over time")
-
-        save(fig_cds_volume_and_prevalence_month(df))
-        save(fig_cds_prevalence_year(df))
-        save(fig_cds_prevalence_month_by_role(df))
-
-        # ── Section 3: CDS by category ───────────────────────────────────────
-        save(_section_divider("Section 3 — CDS Prevalence by Category"))
-        print("  Section 3: CDS by category")
-
-        save(fig_cds_by_category(df))
-
-        # ── Section 4: Within-user distribution ──────────────────────────────
-        save(_section_divider("Section 4 — Within-User CDS Distribution"))
-        print("  Section 4: CDS distribution")
-
-        save(fig_cds_distribution_kde(df))
-
-        # ── Section 5: CDS by category over time ─────────────────────────────
-        save(_section_divider("Section 5 — CDS per Category Over Time"))
-        print("  Section 5: CDS per category over time")
-
-        save(fig_cds_category_over_time(df, granularity="year"))
-        save(fig_cds_category_over_time(df, granularity="month"))
+    build_pdf(df, pdf_path=pdf_path_out)
 
     print(f"\n✓ Done.")
-    print(f"  {PDF_PATH}")
-    print(f"  {CDS_PATH}")
-    print(f"  {USER_CDS_PATH}")
+    print(f"  {pdf_path_out}")
+    print(f"  {cds_path_out}")
+    print(f"  {user_cds_out}")
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    ap = argparse.ArgumentParser(description="Exploratory analysis + CDS report")
+    ap.add_argument("--dataset", choices=["old", "new_only", "combined"])
+    args = ap.parse_args()
+    main(dataset=args.dataset)

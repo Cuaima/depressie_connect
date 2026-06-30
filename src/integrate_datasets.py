@@ -299,7 +299,7 @@ def detect_new_superusers(new_messages: pd.DataFrame) -> set:
             (signals_df["post_count"] > MIN_POSTS_FOR_DIVERSITY_SIGNAL)
         ) |
         (
-            (signals_df["hour_std"].fillna(99) < HOUR_STD_THRESHOLD) &
+            (signals_df["hour_std"].astype("float64").fillna(99) < HOUR_STD_THRESHOLD) &
             (signals_df["post_count"] > MIN_POSTS_FOR_RATE_SIGNAL)
         )
     )
@@ -509,15 +509,18 @@ def combine_and_save(
 
     combined = combined.sort_values(["ForumTopicID", "PostDate"]).reset_index(drop=True)
 
-    print(f"\n  Combined dataset:")
+    print("\n  Combined dataset:")
     print(f"    Total messages:  {len(combined)}")
     print(f"    Unique posters:  {combined['PosterID'].nunique()}")
     print(f"    Date range:      {combined['PostDate'].min()} → {combined['PostDate'].max()}")
     print(f"    From old data:   {(combined['source'] == 'old').sum()}")
     print(f"    From new data:   {(combined['source'] == 'new').sum()}")
 
-    write_csv(combined,   "integrated_messages.csv")
-    write_csv(new_topics, "integrated_topics_review.csv")
+    write_csv(combined,                                    "integrated_messages.csv")
+    write_csv(combined[combined["source"] == "old"],       "messages_old.csv")
+    write_csv(combined[combined["source"] == "new"],       "messages_new_only.csv")
+    write_csv(combined,                                    "messages_combined.csv")
+    write_csv(new_topics,                                  "integrated_topics_review.csv")
 
 
 # =============================================================================

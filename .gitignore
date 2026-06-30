@@ -109,3 +109,6 @@ docker-compose.*.yml
 .idea/
 *.sublime-workspace
 *.sublime-project
+
+# Claude Code
+.claude/

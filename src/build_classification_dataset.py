@@ -19,8 +19,6 @@ from config import (
     COMMUNITY_ACCOUNT_IDS,
 )
 
-DATE_COLUMN_PRIMARY = "PostDate"   # local alias
-
 
 def build_dataset(messages: pd.DataFrame | None = None) -> pd.DataFrame:
     """

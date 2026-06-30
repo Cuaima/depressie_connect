@@ -27,7 +27,6 @@ from __future__ import annotations
 
 import os
 import re
-import sys
 import warnings
 import pandas as pd
 import numpy as np
@@ -37,10 +36,12 @@ import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf as pdf_backend
 from collections import defaultdict
 
+from utils.thread_utils import label_roles
+
 warnings.filterwarnings("ignore")
 
 # ── Config ────────────────────────────────────────────────────────────────────
-INPUT_PATH    = "output/messages_community.csv"
+INPUT_PATH    = "output/preprocessed/messages_community.csv"
 OUTPUT_DIR    = "output"
 PDF_PATH      = os.path.join(OUTPUT_DIR, "liwc_report.pdf")
 SCORES_PATH   = os.path.join(OUTPUT_DIR, "liwc_scores.csv")
@@ -244,18 +245,6 @@ def score_messages(
     return df, liwc_cols
 
 
-# =============================================================================
-# 3. Label thread roles (mirrors exploratory_analysis.py)
-# =============================================================================
-
-def label_roles(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy().sort_values(DATE_COL)
-    first_idx = df.groupby(TOPIC_COL)[DATE_COL].idxmin()
-    df["role"] = "reply"
-    df.loc[first_idx, "role"] = "post"
-    return df
-
-
 def add_time_columns(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["year"]       = df[DATE_COL].dt.year
@@ -440,15 +429,22 @@ def fig_category_over_time(
     return fig
 
 
-def build_pdf(df: pd.DataFrame, liwc_cols: list[str]):
-    print(f"Building PDF → {PDF_PATH}")
-    with pdf_backend.PdfPages(PDF_PATH) as pdf:
+def build_pdf(df: pd.DataFrame, liwc_cols: list[str],
+              pdf_path: str | None = None, pdf=None, include_cover: bool = True):
+    """Write the LIWC analysis section to pdf_path or an existing pdf handle."""
+    if pdf_path is None:
+        pdf_path = PDF_PATH
+
+    def _write(writer):
         def save(fig):
-            pdf.savefig(fig, bbox_inches="tight")
+            writer.savefig(fig, bbox_inches="tight")
             plt.close("all")
 
-        save(_cover_page("Depression Connect Forum",
-                         "LIWC Psycholinguistic Feature Analysis"))
+        if include_cover:
+            save(_cover_page("Depression Connect Forum",
+                             "LIWC Psycholinguistic Feature Analysis"))
+        else:
+            save(_section_divider("LIWC Psycholinguistic Analysis"))
 
         save(_section_divider("Section 1 — Overall Category Prevalence"))
         save(fig_category_prevalence(df, liwc_cols))
@@ -459,28 +455,39 @@ def build_pdf(df: pd.DataFrame, liwc_cols: list[str]):
         save(_section_divider("Section 3 — Top Categories Over Time"))
         save(fig_category_over_time(df, liwc_cols))
 
-    print(f"  PDF saved → {PDF_PATH}")
+    if pdf is not None:
+        _write(pdf)
+    else:
+        print(f"Building PDF → {pdf_path}")
+        with pdf_backend.PdfPages(pdf_path) as writer:
+            _write(writer)
+        print(f"  PDF saved → {pdf_path}")
 
 
 # =============================================================================
 # Main
 # =============================================================================
 
-def main():
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+_DATASET_SUFFIX = {None: "", "combined": "", "old": "_old", "new_only": "_new_only"}
 
-    # ── Load messages ─────────────────────────────────────────────────────────
+
+def main(dataset: str | None = None):
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    suffix       = _DATASET_SUFFIX.get(dataset, "")
+    input_path   = f"output/preprocessed/messages_community{suffix}.csv"
+    scores_out   = os.path.join(OUTPUT_DIR, f"liwc_scores{suffix}.csv")
+    user_out     = os.path.join(OUTPUT_DIR, f"liwc_per_user{suffix}.csv")
+    pdf_out      = os.path.join(OUTPUT_DIR, f"liwc_report{suffix}.pdf")
+
     print("Loading messages…")
-    df = pd.read_csv(INPUT_PATH)
+    df = pd.read_csv(input_path)
     df[DATE_COL] = pd.to_datetime(df[DATE_COL], errors="coerce")
     df = df.dropna(subset=[DATE_COL, TEXT_COL]).copy()
     print(f"  {len(df)} messages from {df[POSTER_COL].nunique()} users.")
 
-    # ── Label roles + time columns ────────────────────────────────────────────
     df = label_roles(df)
     df = add_time_columns(df)
 
-    # ── Load LIWC dictionary ──────────────────────────────────────────────────
     print(f"\nLoading LIWC dictionary from {LIWC_DICT_PATH}…")
     if not os.path.exists(LIWC_DICT_PATH):
         raise FileNotFoundError(
@@ -490,35 +497,34 @@ def main():
     term_to_categories, category_map = load_liwc(LIWC_DICT_PATH)
     all_categories = sorted(set(category_map.values()))
 
-    # ── Score messages ────────────────────────────────────────────────────────
     print("\nScoring messages…")
     df, liwc_cols = score_messages(df, term_to_categories, all_categories)
 
-    # ── Save scored messages ──────────────────────────────────────────────────
-    df.to_csv(SCORES_PATH, index=False)
-    print(f"  Saved scored messages → {SCORES_PATH}")
+    df.to_csv(scores_out, index=False)
+    print(f"  Saved scored messages → {scores_out}")
 
-    # ── Per-user summary ──────────────────────────────────────────────────────
     user_df = per_user_summary(df, liwc_cols)
-    user_df.to_csv(USER_PATH, index=False)
-    print(f"  Saved per-user summary → {USER_PATH}")
+    user_df.to_csv(user_out, index=False)
+    print(f"  Saved per-user summary → {user_out}")
 
-    # ── Print top categories ──────────────────────────────────────────────────
     pct_cols = [c + "_pct" for c in liwc_cols if c + "_pct" in df.columns]
     top10 = df[pct_cols].mean().sort_values(ascending=False).head(10)
     print("\nTop 10 LIWC categories by mean % of words:")
     for cat, val in top10.items():
         print(f"  {cat.replace('liwc_', '').replace('_pct', ''):<30}  {val:.3f}%")
 
-    # ── Build PDF ─────────────────────────────────────────────────────────────
     print()
-    build_pdf(df, liwc_cols)
+    build_pdf(df, liwc_cols, pdf_path=pdf_out)
 
     print("\n✓ Done.")
-    print(f"  {SCORES_PATH}")
-    print(f"  {USER_PATH}")
-    print(f"  {PDF_PATH}")
+    print(f"  {scores_out}")
+    print(f"  {user_out}")
+    print(f"  {pdf_out}")
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    ap = argparse.ArgumentParser(description="LIWC analysis report")
+    ap.add_argument("--dataset", choices=["old", "new_only", "combined"])
+    args = ap.parse_args()
+    main(dataset=args.dataset)

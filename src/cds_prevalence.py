@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import os
-import sys
 import warnings
 import pandas as pd
 import numpy as np
@@ -25,13 +24,13 @@ import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf as pdf_backend
 from scipy import stats as scipy_stats
 
+from utils.CDS import process_dataset, load_CDS
+from utils.thread_utils import label_roles
+
 warnings.filterwarnings("ignore")
 
-sys.path.append(os.path.dirname(__file__))
-from CDS import process_dataset, load_CDS
-
 # ── Config ────────────────────────────────────────────────────────────────────
-INPUT_PATH    = "output/messages_community.csv"
+INPUT_PATH    = "output/preprocessed/messages_community.csv"
 SCORED_PATH   = "output/cds_scores.csv"       # written by exploratory_analysis.py
 OUTPUT_DIR    = "output"
 PDF_PATH      = os.path.join(OUTPUT_DIR, "cds_prevalence_report.pdf")
@@ -64,19 +63,11 @@ CDS_CATEGORY_COLS = [
 # Data loading
 # =============================================================================
 
-def load_messages() -> pd.DataFrame:
-    df = pd.read_csv(INPUT_PATH)
+def load_messages(path: str | None = None) -> pd.DataFrame:
+    df = pd.read_csv(path or INPUT_PATH)
     df[DATE_COL] = pd.to_datetime(df[DATE_COL], errors="coerce")
     df = df.dropna(subset=[DATE_COL, TEXT_COL]).copy()
     print(f"  Loaded {len(df)} messages from {df[POSTER_COL].nunique()} users.")
-    return df
-
-
-def label_roles(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy().sort_values(DATE_COL)
-    first_idx = df.groupby(TOPIC_COL)[DATE_COL].idxmin()
-    df["role"] = "reply"
-    df.loc[first_idx, "role"] = "post"
     return df
 
 
@@ -87,19 +78,21 @@ def add_time_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def get_scored_df() -> tuple[pd.DataFrame, pd.DataFrame]:
+def get_scored_df(input_path: str | None = None,
+                  scored_path: str | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Returns (scored_df, cds_phrases_df).
-    Loads from cds_scores.csv if available (fast path), otherwise re-scores.
+    Loads from scored_path (cds_scores.csv) if available, otherwise re-scores from input_path.
     cds_phrases_df has one column per individual CDS phrase (not category).
     """
-    if os.path.exists(SCORED_PATH):
-        print(f"  Loading pre-scored data from {SCORED_PATH}")
-        df = pd.read_csv(SCORED_PATH)
+    scored_path = scored_path or SCORED_PATH
+    if os.path.exists(scored_path):
+        print(f"  Loading pre-scored data from {scored_path}")
+        df = pd.read_csv(scored_path)
         df[DATE_COL] = pd.to_datetime(df[DATE_COL], errors="coerce")
     else:
         print("  cds_scores.csv not found — running CDS scoring from scratch…")
-        df = load_messages()
+        df = load_messages(input_path)
 
     df = label_roles(df)
     df = add_time_columns(df)
@@ -458,50 +451,26 @@ def fig_stats_table(cat_ranking: pd.DataFrame) -> plt.Figure:
 
 
 # =============================================================================
-# Main
+# PDF builder (can write to an existing PdfPages handle for consolidated reports)
 # =============================================================================
 
-def main():
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+def build_pdf(df: pd.DataFrame, cds_phrases: pd.DataFrame,
+              cat_ranking: pd.DataFrame, phrase_ranking: pd.DataFrame,
+              pdf_path: str | None = None, pdf=None, include_cover: bool = True):
+    """Write the CDS prevalence section to pdf_path or an existing pdf handle."""
+    if pdf_path is None:
+        pdf_path = PDF_PATH
 
-    print("Loading and scoring data…")
-    df, cds_phrases = get_scored_df()
-
-    print("\nComputing category ranking…")
-    cat_ranking = compute_category_ranking(df)
-    cat_ranking.to_csv(CAT_RANK_PATH, index=False)
-    print(f"  Saved → {CAT_RANK_PATH}")
-
-    print("\nComputing phrase ranking…")
-    phrase_ranking = compute_phrase_ranking(df, cds_phrases)
-    phrase_ranking.to_csv(PHR_RANK_PATH, index=False)
-    print(f"  Saved → {PHR_RANK_PATH}")
-
-    # ── Terminal summary ──────────────────────────────────────────────────────
-    sep = "\n" + "─" * 60
-
-    print(sep)
-    print("CDS CATEGORY RANKING (most to least prevalent)")
-    print(cat_ranking[
-        ["category", "prevalence_pct", "prevalence_posts_pct",
-         "prevalence_replies_pct", "p_value"]
-    ].to_string(index=False))
-
-    print(sep)
-    print("TOP 20 INDIVIDUAL CDS PHRASES")
-    print(phrase_ranking[
-        ["phrase", "category", "total_matches", "prevalence_pct"]
-    ].head(20).to_string(index=False))
-
-    # ── Build PDF ─────────────────────────────────────────────────────────────
-    print(f"\nBuilding PDF → {PDF_PATH}")
-    with pdf_backend.PdfPages(PDF_PATH) as pdf:
+    def _write(writer):
         def save(fig):
-            pdf.savefig(fig, bbox_inches="tight")
+            writer.savefig(fig, bbox_inches="tight")
             plt.close("all")
 
-        save(_cover_page("Depression Connect Forum",
-                         "Most Common Cognitive Distortions (CDS Prevalence)"))
+        if include_cover:
+            save(_cover_page("Depression Connect Forum",
+                             "Most Common Cognitive Distortions (CDS Prevalence)"))
+        else:
+            save(_section_divider("CDS Prevalence Analysis"))
 
         save(_section_divider("Section 1 — Category Ranking"))
         save(fig_stats_table(cat_ranking))
@@ -515,11 +484,68 @@ def main():
         save(_section_divider("Section 3 — Category Trends Over Time"))
         save(fig_category_trend(df))
 
+    if pdf is not None:
+        _write(pdf)
+    else:
+        print(f"Building PDF → {pdf_path}")
+        with pdf_backend.PdfPages(pdf_path) as writer:
+            _write(writer)
+        print(f"  PDF saved → {pdf_path}")
+
+
+# =============================================================================
+# Main
+# =============================================================================
+
+_DATASET_SUFFIX = {None: "", "combined": "", "old": "_old", "new_only": "_new_only"}
+
+
+def main(dataset: str | None = None):
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    suffix         = _DATASET_SUFFIX.get(dataset, "")
+    input_path     = f"output/preprocessed/messages_community{suffix}.csv"
+    scored_path    = os.path.join(OUTPUT_DIR, f"cds_scores{suffix}.csv")
+    pdf_path_out   = os.path.join(OUTPUT_DIR, f"cds_prevalence_report{suffix}.pdf")
+    cat_rank_out   = os.path.join(OUTPUT_DIR, f"cds_category_ranking{suffix}.csv")
+    phr_rank_out   = os.path.join(OUTPUT_DIR, f"cds_phrase_ranking{suffix}.csv")
+
+    print("Loading and scoring data…")
+    df, cds_phrases = get_scored_df(input_path=input_path, scored_path=scored_path)
+
+    print("\nComputing category ranking…")
+    cat_ranking = compute_category_ranking(df)
+    cat_ranking.to_csv(cat_rank_out, index=False)
+    print(f"  Saved → {cat_rank_out}")
+
+    print("\nComputing phrase ranking…")
+    phrase_ranking = compute_phrase_ranking(df, cds_phrases)
+    phrase_ranking.to_csv(phr_rank_out, index=False)
+    print(f"  Saved → {phr_rank_out}")
+
+    sep = "\n" + "─" * 60
+    print(sep)
+    print("CDS CATEGORY RANKING (most to least prevalent)")
+    print(cat_ranking[
+        ["category", "prevalence_pct", "prevalence_posts_pct",
+         "prevalence_replies_pct", "p_value"]
+    ].to_string(index=False))
+    print(sep)
+    print("TOP 20 INDIVIDUAL CDS PHRASES")
+    print(phrase_ranking[
+        ["phrase", "category", "total_matches", "prevalence_pct"]
+    ].head(20).to_string(index=False))
+
+    build_pdf(df, cds_phrases, cat_ranking, phrase_ranking, pdf_path=pdf_path_out)
+
     print(f"\n✓ Done.")
-    print(f"  {PDF_PATH}")
-    print(f"  {CAT_RANK_PATH}")
-    print(f"  {PHR_RANK_PATH}")
+    print(f"  {pdf_path_out}")
+    print(f"  {cat_rank_out}")
+    print(f"  {phr_rank_out}")
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    ap = argparse.ArgumentParser(description="CDS prevalence report")
+    ap.add_argument("--dataset", choices=["old", "new_only", "combined"])
+    args = ap.parse_args()
+    main(dataset=args.dataset)
