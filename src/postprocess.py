@@ -6,6 +6,7 @@
 #
 #   1. load_cleaned_data()         – load messages_community.csv
 #   2. filter_intro_groups()       – drop welcome / off-topic threads
+#   2b. filter_min_posts()         – drop users below MIN_POSTS_PER_USER threshold
 #   3. build_thread_structure()    – flag initial posts vs replies
 #   4. label_thread_success()      – threads with 0 replies = negative class
 #   5. normalize_text()            – lowercase, whitespace, repeated chars
@@ -22,7 +23,7 @@ import os
 import re
 import pandas as pd
 
-from config import PREPROCESS_DIR, OUTPUT_DIR, INTRO_GROUP_KEYWORDS
+from config import PREPROCESS_DIR, OUTPUT_DIR, INTRO_GROUP_KEYWORDS, MIN_POSTS_PER_USER
 
 # ── Config ────────────────────────────────────────────────────────────────────
 TEXT_COLUMN = "MessageText"
@@ -85,6 +86,27 @@ def filter_intro_groups(
     print(
         f"  Removed {before - messages['ForumTopicID'].nunique()} intro/welcome/off-topic threads – "
         f"{messages['ForumTopicID'].nunique()} threads remain."
+    )
+    return messages
+
+
+# ── Step 2b: Filter low-activity users ───────────────────────────────────────
+
+def filter_min_posts(
+    messages: pd.DataFrame,
+    min_posts: int = MIN_POSTS_PER_USER,
+) -> pd.DataFrame:
+    print(f"\n[2b] Filtering users with fewer than {min_posts} posts...")
+
+    posts_per_user = messages.groupby("PosterID").size()
+    active_users   = set(posts_per_user[posts_per_user >= min_posts].index)
+
+    before = messages["PosterID"].nunique()
+    messages = messages[messages["PosterID"].isin(active_users)].copy()
+    after = messages["PosterID"].nunique()
+    print(
+        f"  Removed {before - after} users with fewer than {min_posts} posts – "
+        f"{after} users remain ({len(messages)} messages)."
     )
     return messages
 
@@ -219,6 +241,7 @@ def run(dataset: str | None = None):
 
     messages = load_cleaned_data(dataset)
     messages = filter_intro_groups(messages)
+    messages = filter_min_posts(messages)
     messages = build_thread_structure(messages)
     messages = label_thread_success(messages)
     messages = normalize_text(messages)

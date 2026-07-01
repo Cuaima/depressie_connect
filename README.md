@@ -41,6 +41,9 @@ depression_connect_project/
 │   ├── sample_ik_voel.py          # Sample "ik voel" messages for manual review
 │   ├── user_longitudinal.py       # Per-user CDS + LIWC time-series analysis
 │   ├── full_report.py             # Consolidated single-PDF report (all sections, one file)
+│   ├── build_master_report.py     # Merge existing sub-report PDFs into one file (pypdf)
+│   ├── dataset_io.py              # Single source of truth for dataset → filename resolution
+│   ├── role_analysis.py           # Post vs reply analysis figures (used by eda_report.py)
 │   ├── diagnose_new_data.py       # Pre-integration diagnostic (read-only)
 │   ├── analysis.py
 │   ├── eda_report.py              # Legacy EDA report (superseded by exploration.py)
@@ -51,7 +54,8 @@ depression_connect_project/
 │   │   └── postvscomment.py
 │   ├── utils/                     # Shared utilities
 │   │   ├── CDS.py                 # Cognitive distortion schemata loader + scorer
-│   │   └── thread_utils.py        # label_roles() and label_thread_roles()
+│   │   ├── thread_utils.py        # label_roles(), NLP helpers (tokenize, sentence stats, emoji)
+│   │   └── absolutist.py          # Dutch absolutist word list + scoring functions
 │   └── app.py                     # Streamlit dashboard
 │
 ├── scripts/                       # One-off diagnostic and inspection utilities
@@ -107,11 +111,32 @@ Run scripts in this order. Steps 1–3 must each be run once per dataset when wo
    liwc_analysis.py           →  LIWC psycholinguistic features
    user_longitudinal.py       →  per-user CDS + LIWC time series (top N posters)
 
-6. full_report.py             →  single consolidated PDF combining steps 4–5
-     --dataset old            → full_report_old.pdf
-     --dataset new_only       → full_report_new_only.pdf
-     --dataset combined       → full_report.pdf          (default)
-     --all                    → all three datasets in one run
+6. Choose one consolidated PDF approach:
+
+   A. full_report.py          →  loads data ONCE, scores CDS + LIWC once, writes all
+                                   sections to a single PDF in one pass
+        --dataset old          → full_report_old.pdf
+        --dataset new_only     → full_report_new_only.pdf
+        --dataset combined     → full_report.pdf  (default)
+        --all                  → all three datasets
+
+   B. build_master_report.py  →  merges the sub-report PDFs produced in steps 4–5
+                                   using pypdf; requires all sub-reports to exist first
+        --dataset combined     → master_report.pdf  (default)
+        --all-variants         → all three datasets
+        --run                  → also re-runs each sub-script before merging
+
+      Commands to run before `make master-report`:
+        make pipeline          # preprocess + postprocess (steps 1–2)
+        make analyse           # eda + cds + liwc  (produces sub-report PDFs)
+        make longitudinal      # per-user time-series PDF
+        make master-report     # merge
+
+      For all three dataset variants:
+        make pipeline-all
+        make analyse-all
+        make longitudinal-all
+        make master-report-all
 
 7. app.py                    streamlit run src/app.py
 ```
@@ -177,14 +202,16 @@ Output is named `messages_structured_old.csv`, `messages_structured_new_only.csv
 
 All analysis scripts accept `--dataset {old,new_only,combined}`. Omit the flag to run on the default combined/single-export dataset. Output files are suffixed with the dataset name (e.g. `liwc_report_old.pdf`).
 
-| Script | Input (`preprocessed/`) | Outputs |
+All analysis scripts read from `output/messages_structured.csv` (the postprocess output), which has intro/welcome groups already filtered out. Run `make pipeline` (or `make pipeline-all`) before running any analysis.
+
+| Script | Input | Outputs |
 |---|---|---|
-| `build_classification_dataset.py` | `messages_community.csv` | `classification_dataset.csv` |
-| `exploration.py` | `messages_community.csv` | `eda_report_all_users.pdf`, `eda_report_multi_posters.pdf`, `messages_multi_posters.csv` |
-| `exploratory_analysis.py` | `messages_community.csv` | `exploratory_report.pdf`, `cds_scores.csv`, `cds_per_user.csv` |
-| `cds_prevalence.py` | `messages_community.csv` | `cds_prevalence_report.pdf`, `cds_category_ranking.csv`, `cds_phrase_ranking.csv` |
-| `liwc_analysis.py` | `messages_community.csv` | `liwc_report.pdf`, `liwc_scores.csv`, `liwc_per_user.csv` |
-| `user_longitudinal.py` | `messages_structured.csv` | `longitudinal/user_longitudinal.pdf` |
+| `build_classification_dataset.py` | `preprocessed/messages_community.csv` | `classification_dataset.csv` |
+| `exploration.py` | `messages_structured.csv` | `eda_report_all_users.pdf`, `eda_report_multi_posters.pdf`, `messages_multi_posters.csv` |
+| `exploratory_analysis.py` | `messages_structured.csv` | `exploratory_report.pdf`, `cds_scores.csv`, `cds_per_user.csv` |
+| `cds_prevalence.py` | `messages_structured.csv` | `cds_prevalence_report.pdf`, `cds_category_ranking.csv`, `cds_phrase_ranking.csv` |
+| `liwc_analysis.py` | `messages_structured.csv` | `liwc_report.pdf`, `liwc_scores.csv`, `liwc_per_user.csv` |
+| `user_longitudinal.py` | `messages_structured.csv` | `user_longitudinal_report.pdf` |
 
 The EDA report (`exploration.py`) includes a **Role-Based Analysis** section at the end of each PDF:
 
@@ -292,14 +319,23 @@ make postprocess DATASET=old
 ### Analysis and app
 
 ```bash
-make eda          # EDA report (exploration.py)
-make cds          # CDS prevalence (exploratory_analysis + cds_prevalence)
-make liwc         # LIWC analysis
-make analyse      # all three (eda + cds + liwc)
-make longitudinal # per-user LIWC/CDS time series
+make eda              # EDA report (exploration.py)
+make cds              # CDS prevalence (exploratory_analysis + cds_prevalence)
+make liwc             # LIWC analysis
+make analyse          # all three (eda + cds + liwc)
+make analyse-all      # all three analysis scripts for old, new_only, and combined
+make longitudinal     # per-user LIWC/CDS time series
+make longitudinal-all # longitudinal analysis for old, new_only, and combined
 
-make full-report          # consolidated single-PDF report (combined dataset)
-make full-report-all      # run for old, new_only, and combined
+# Option A — single-pass consolidated PDF (faster, no intermediate files needed)
+make full-report          # combined dataset
+make full-report-all      # old, new_only, and combined
+
+# Option B — merge existing sub-report PDFs with pypdf
+#   Prerequisites (all three datasets):
+#     make pipeline-all && make analyse-all && make longitudinal-all
+make master-report        # merge sub-reports → master_report.pdf (combined dataset)
+make master-report-all    # all three dataset variants
 
 make app          # launch Streamlit dashboard
 ```

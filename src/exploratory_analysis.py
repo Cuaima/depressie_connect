@@ -38,6 +38,7 @@ from scipy import stats
 
 from utils.CDS import process_dataset
 from utils.thread_utils import label_roles
+from dataset_io import add_dataset_arg, structured_path, variant_path, subtitle_for
 
 warnings.filterwarnings("ignore")
 
@@ -49,7 +50,7 @@ CDS_CATEGORY_COLS = [
 ]
 
 # ── Config ────────────────────────────────────────────────────────────────────
-INPUT_PATH    = "output/preprocessed/messages_community.csv"
+INPUT_PATH    = "output/messages_structured.csv"
 OUTPUT_DIR    = "output"
 PDF_PATH      = os.path.join(OUTPUT_DIR, "exploratory_report.pdf")
 CDS_PATH      = os.path.join(OUTPUT_DIR, "cds_scores.csv")
@@ -631,16 +632,13 @@ def build_pdf(df: pd.DataFrame, pdf_path: str | None = None,
 # Main
 # =============================================================================
 
-_DATASET_SUFFIX = {None: "", "combined": "", "old": "_old", "new_only": "_new_only"}
-
-
 def main(dataset: str | None = None):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    suffix        = _DATASET_SUFFIX.get(dataset, "")
-    input_path    = f"output/preprocessed/messages_community{suffix}.csv"
-    pdf_path_out  = os.path.join(OUTPUT_DIR, f"exploratory_report{suffix}.pdf")
-    cds_path_out  = os.path.join(OUTPUT_DIR, f"cds_scores{suffix}.csv")
-    user_cds_out  = os.path.join(OUTPUT_DIR, f"cds_per_user{suffix}.csv")
+    ds            = dataset or "combined"
+    input_path    = structured_path(OUTPUT_DIR, ds)
+    pdf_path_out  = variant_path(OUTPUT_DIR, "exploratory_report.pdf", ds)
+    cds_path_out  = variant_path(OUTPUT_DIR, "cds_scores.csv",         ds)
+    user_cds_out  = variant_path(OUTPUT_DIR, "cds_per_user.csv",       ds)
 
     print("Loading data…")
     df = load_data(input_path)
@@ -674,6 +672,6 @@ def main(dataset: str | None = None):
 if __name__ == "__main__":
     import argparse
     ap = argparse.ArgumentParser(description="Exploratory analysis + CDS report")
-    ap.add_argument("--dataset", choices=["old", "new_only", "combined"])
+    add_dataset_arg(ap)
     args = ap.parse_args()
     main(dataset=args.dataset)

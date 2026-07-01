@@ -134,3 +134,6 @@ xattr==1.2.0
 zipp==3.21.0
 zstandard==0.25.0
 pytest
+pypdf
+statsmodels
+tqdm

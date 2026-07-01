@@ -24,6 +24,8 @@ import warnings
 import pandas as pd
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 
+from tqdm import tqdm
+
 from config import (
     DATA_DIR, OUTPUT_DIR, PREPROCESS_DIR,
     CSV_FILES, ID_COLUMN, DATE_COLUMNS, TEXT_COLUMN,
@@ -288,7 +290,8 @@ def filter_text_quality(
 
     if language_filter and _LANGDETECT_AVAILABLE:
         before = len(df)
-        df["_lang"] = df[TEXT_COLUMN].apply(_detect_language)
+        tqdm.pandas(desc="Language detection", unit="msg")
+        df["_lang"] = df[TEXT_COLUMN].progress_apply(_detect_language)
         df = df[df["_lang"] == target_lang].drop(columns=["_lang"])
         print(f"  Language filter ({target_lang}): {before} → {len(df)} messages.")
 
@@ -337,7 +340,8 @@ def anonymize_text_column(
         return df
 
     anon_texts, anon_entities = [], []
-    for text in df[column].fillna("").astype(str):
+    for text in tqdm(df[column].fillna("").astype(str),
+                     desc=f"Anonymising {column}", unit="msg"):
         cleaned = _strip_at_mentions(text)
         anon, entities = ta_anonymize(cleaned)
         anon_texts.append(anon)
@@ -444,8 +448,13 @@ def run_pipeline(dataset: str | None = None):
     """
     ensure_output_dir()
 
-    using_integrated = dataset is not None or os.path.exists(
-        os.path.join(OUTPUT_DIR, "integrated_messages.csv")
+    # Skip superuser/moderator removal only for "combined" (integrate_datasets.py
+    # already filtered it) and for the legacy single-export path when
+    # integrated_messages.csv exists on disk.  For "old" and "new_only" we always
+    # run the removal because those slices are not guaranteed to be clean.
+    skip_removal = dataset == "combined" or (
+        dataset is None
+        and os.path.exists(os.path.join(OUTPUT_DIR, "integrated_messages.csv"))
     )
 
     # 1. Load
@@ -460,8 +469,8 @@ def run_pipeline(dataset: str | None = None):
         "groups": raw_groups,
     })
 
-    if using_integrated:
-        print("\n[3] Skipping superuser removal – already applied in integrate_datasets.py")
+    if skip_removal:
+        print("\n[3] Skipping superuser/moderator removal – already applied in integrate_datasets.py")
     else:
         # 3. Superuser removal
         print("\n[3] Identifying superusers…")
@@ -494,8 +503,21 @@ def run_pipeline(dataset: str | None = None):
         print("\n[7] Anonymizing text…")
         dfs["messages"] = anonymize_text_columns(dfs["messages"], columns=[TEXT_COLUMN])
         dfs["topics"]   = anonymize_text_columns(dfs["topics"],   columns=["Name"])
-        # Re-derive the normalized column from the now-anonymized text so it
-        # doesn't leak PII that was removed from the primary column above.
+
+        # 7b. Strip entity placeholder tokens (e.g. [ENTITY_PERSON_1]) so they
+        # don't appear as words in word-frequency and LIWC analyses downstream.
+        # The anonymizer review CSV and entity log are already written above.
+        print("\n[7b] Stripping entity placeholder tokens…")
+        _entity_re = re.compile(r"\[ENTITY_[A-Z]+_\d+\]")
+        dfs["messages"][TEXT_COLUMN] = (
+            dfs["messages"][TEXT_COLUMN]
+            .str.replace(_entity_re, "", regex=True)
+            .str.replace(r"  +", " ", regex=True)
+            .str.strip()
+        )
+        print("  Done.")
+
+        # Re-derive the normalized column from the now-cleaned text.
         norm_col = f"{TEXT_COLUMN}_normalized"
         if norm_col in dfs["messages"].columns:
             dfs["messages"][norm_col] = dfs["messages"][TEXT_COLUMN].str.lower()

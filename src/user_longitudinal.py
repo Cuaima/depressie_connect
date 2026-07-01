@@ -17,12 +17,13 @@ import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf as pdf_backend
 
 from utils.thread_utils import label_roles
-from liwc_analysis import load_liwc, score_messages
+from liwc_analysis import load_liwc, score_messages, ensure_fps
+from dataset_io import add_dataset_arg, structured_path, variant_path
 
 DATE_COL   = "PostDate"
 POSTER_COL = "PosterID"
 TEXT_COL   = "MessageText"
-OUTPUT_DIR = "output/longitudinal"
+OUTPUT_DIR = "output"
 LIWC_PATH  = "src/liwc15.dic"
 
 PRIMARY   = "#2E5E8E"
@@ -33,11 +34,6 @@ PALETTE   = ["#2E5E8E", "#E8A838", "#5A9E6F", "#C0392B", "#8E44AD"]
 # =============================================================================
 # Data loading
 # =============================================================================
-
-def get_input_path(dataset: str | None = None) -> str:
-    suffix = f"_{dataset}" if dataset and dataset != "combined" else ""
-    return f"output/messages_structured{suffix}.csv"
-
 
 def load_data(path: str) -> pd.DataFrame:
     df = pd.read_csv(path)
@@ -76,16 +72,18 @@ def score_liwc(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
 
     term_to_categories, category_map = load_liwc(LIWC_PATH)
     all_categories = sorted(set(category_map.values()))
+    term_to_categories, all_categories = ensure_fps(term_to_categories, all_categories)
     scored, liwc_cols = score_messages(df, term_to_categories, all_categories)
 
     pct_cols = [c + "_pct" for c in liwc_cols]
-    # Keep only the top 8 most prevalent categories to keep plots readable
-    top_pct_cols = (
-        scored[pct_cols].mean()
-        .sort_values(ascending=False)
-        .head(8)
-        .index.tolist()
-    )
+    # Prioritise first-person singular; fill remaining slots by prevalence
+    fps_priority = [f"liwc_{c}_pct" for c in ("i", "fps_dutch")]
+    fps_present  = [c for c in fps_priority if c in pct_cols]
+    others = [
+        c for c in scored[pct_cols].mean().sort_values(ascending=False).index
+        if c not in fps_present
+    ]
+    top_pct_cols = (fps_present + others)[:8]
     return scored[[POSTER_COL, DATE_COL] + top_pct_cols], top_pct_cols
 
 
@@ -168,10 +166,10 @@ def _time_series_page(monthly_df: pd.DataFrame, top_users: list[str],
 
 def run(input_path: str | None = None, dataset: str | None = None, top_n: int = 5):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
+    ds = dataset or "combined"
     if input_path is None:
-        input_path = get_input_path(dataset)
-    suffix = f"_{dataset}" if dataset and dataset != "combined" else ""
-    pdf_path = os.path.join(OUTPUT_DIR, f"user_longitudinal{suffix}.pdf")
+        input_path = structured_path(OUTPUT_DIR, ds)
+    pdf_path = variant_path(OUTPUT_DIR, "user_longitudinal_report.pdf", ds)
 
     print(f"Loading {input_path}…")
     df = load_data(input_path)
@@ -214,7 +212,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Per-user longitudinal LIWC and CDS analysis."
     )
-    parser.add_argument("--dataset", choices=["old", "new_only", "combined"])
+    add_dataset_arg(parser)
     parser.add_argument("--top", type=int, default=5,
                         help="Number of top posters to analyse (default: 5)")
     parser.add_argument("--input", help="Override input file path (ignores --dataset)")

@@ -13,9 +13,10 @@ DATASET_FLAG  = $(if $(DATASET),--dataset $(DATASET),)
         preprocess preprocess-all \
         postprocess postprocess-all \
         pipeline pipeline-all \
-        eda cds liwc analyse \
+        eda cds liwc analyse analyse-all \
         full-report full-report-all \
-        longitudinal \
+        master-report master-report-all \
+        longitudinal longitudinal-all \
         app \
         test
 
@@ -45,11 +46,16 @@ help:
 	@echo "  make cds                CDS analysis (exploratory_analysis + cds_prevalence)"
 	@echo "  make liwc               LIWC analysis (liwc_analysis)"
 	@echo "  make analyse            All three analysis scripts"
-	@echo "  make full-report        Full consolidated PDF  (all sections, one file)"
-	@echo "  make full-report-all    Full report for old, new_only, and combined"
+	@echo "  make analyse-all        All three analysis scripts for old, new_only, and combined"
 	@echo "  make longitudinal       Per-user LIWC/CDS time series (user_longitudinal)"
+	@echo "  make longitudinal-all   Longitudinal analysis for old, new_only, and combined"
+	@echo "  make full-report        Single-pass consolidated PDF (full_report.py)"
+	@echo "  make full-report-all    Full report for old, new_only, and combined"
+	@echo "  make master-report      Merge sub-report PDFs with pypdf (build_master_report.py)"
+	@echo "  make master-report-all  Master report for all three variants"
+	@echo "  make pipeline-all && make analyse-all && make longitudinal-all && make master-report-all"
 	@echo ""
-	@echo "  Dataset flag:           make eda DATASET=old  (works for eda/cds/liwc/full-report)"
+	@echo "  Dataset flag:           make eda DATASET=old  (works for eda/cds/liwc/full-report/master-report)"
 	@echo ""
 	@echo "App"
 	@echo "  make app                Launch Streamlit dashboard"
@@ -113,14 +119,39 @@ liwc:
 
 analyse: eda cds liwc
 
+analyse-all:
+	$(PY) src/exploration.py --dataset old
+	$(PY) src/exploration.py --dataset new_only
+	$(PY) src/exploration.py --dataset combined
+	$(PY) src/exploratory_analysis.py --dataset old
+	$(PY) src/exploratory_analysis.py --dataset new_only
+	$(PY) src/exploratory_analysis.py --dataset combined
+	$(PY) src/cds_prevalence.py --dataset old
+	$(PY) src/cds_prevalence.py --dataset new_only
+	$(PY) src/cds_prevalence.py --dataset combined
+	$(PY) src/liwc_analysis.py --dataset old
+	$(PY) src/liwc_analysis.py --dataset new_only
+	$(PY) src/liwc_analysis.py --dataset combined
+
 full-report:
 	$(PY) src/full_report.py $(DATASET_FLAG)
 
 full-report-all:
 	$(PY) src/full_report.py --all
 
+master-report:
+	$(PY) src/build_master_report.py $(DATASET_FLAG)
+
+master-report-all:
+	$(PY) src/build_master_report.py --all-variants
+
 longitudinal:
 	$(PY) src/user_longitudinal.py $(DATASET_FLAG)
+
+longitudinal-all:
+	$(PY) src/user_longitudinal.py --dataset old
+	$(PY) src/user_longitudinal.py --dataset new_only
+	$(PY) src/user_longitudinal.py --dataset combined
 
 # ── App ───────────────────────────────────────────────────────────────────────
 

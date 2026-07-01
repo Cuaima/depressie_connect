@@ -4,6 +4,11 @@
 # liwc
 liwc15.dic
 
+# CDS (proprietary scoring data — do not publish)
+src/CDS.py
+src/utils/CDS.py
+scripts/CDS/
+
 # Refactring
 jic/
 

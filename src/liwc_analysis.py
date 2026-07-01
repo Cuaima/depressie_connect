@@ -36,12 +36,16 @@ import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf as pdf_backend
 from collections import defaultdict
 
+from tqdm import tqdm
 from utils.thread_utils import label_roles
+from utils.absolutist import absolutist_rate as _absolutist_rate
+from utils.spinner import Spinner
+from dataset_io import add_dataset_arg, structured_path, variant_path
 
 warnings.filterwarnings("ignore")
 
 # ── Config ────────────────────────────────────────────────────────────────────
-INPUT_PATH    = "output/preprocessed/messages_community.csv"
+INPUT_PATH    = "output/messages_structured.csv"
 OUTPUT_DIR    = "output"
 PDF_PATH      = os.path.join(OUTPUT_DIR, "liwc_report.pdf")
 SCORES_PATH   = os.path.join(OUTPUT_DIR, "liwc_scores.csv")
@@ -162,6 +166,28 @@ def load_liwc(path: str) -> tuple[dict[str, list[str]], dict[str, str]]:
         return load_liwc_dic(path)
 
 
+# First-person singular — LIWC category detection and Dutch fallback
+_FPS_LIWC_CATEGORY = "i"       # standard LIWC-15 category name
+_FPS_CATEGORY_NL   = "fps_dutch"
+_FPS_DUTCH         = ["ik", "mij", "me", "mijn", "mezelf"]
+
+
+def ensure_fps(
+    term_to_categories: dict[str, list[str]],
+    all_categories: list[str],
+) -> tuple[dict[str, list[str]], list[str]]:
+    """Ensure first-person singular is tracked; inject Dutch fallback if missing."""
+    has_fps = any(_FPS_LIWC_CATEGORY in cats for cats in term_to_categories.values())
+    if not has_fps:
+        print("  WARNING: no first-person-singular ('i') category in LIWC dict "
+              "— adding Dutch FPS fallback ('fps_dutch').")
+        term_to_categories = dict(term_to_categories)
+        for word in _FPS_DUTCH:
+            term_to_categories.setdefault(word, []).append(_FPS_CATEGORY_NL)
+        all_categories = sorted(set(all_categories) | {_FPS_CATEGORY_NL})
+    return term_to_categories, all_categories
+
+
 # =============================================================================
 # 2. Score messages against LIWC dictionary
 # =============================================================================
@@ -222,7 +248,7 @@ def score_messages(
     print(f"  Scoring {len(df)} messages against {len(all_categories)} LIWC categories…")
 
     results = []
-    for text in df[TEXT_COL].fillna(""):
+    for text in tqdm(df[TEXT_COL].fillna(""), desc="LIWC scoring", unit="msg"):
         results.append(score_text(text, term_to_categories, all_categories))
 
     scores_df = pd.DataFrame(results)
@@ -320,6 +346,25 @@ def _section_divider(title):
     ax.text(0.5, 0.5, title, transform=ax.transAxes,
             ha="center", va="center", fontsize=14,
             fontweight="bold", color=PRIMARY)
+    return fig
+
+
+def fig_absolutist_by_role(df: pd.DataFrame) -> plt.Figure:
+    """Bar chart: mean absolutist word rate by role (posts vs replies)."""
+    posts   = df[df["role"] == "post"]["absolutist_rate"].mean()
+    replies = df[df["role"] == "reply"]["absolutist_rate"].mean()
+
+    fig, ax = plt.subplots(figsize=(6, 4))
+    ax.bar(["Opening posts", "Replies"], [posts, replies],
+           color=[C_POST, C_REPLY], alpha=0.85, edgecolor="white")
+    for i, v in enumerate([posts, replies]):
+        ax.text(i, v + 0.005, f"{v:.2f}%", ha="center", fontsize=9, color="#333333")
+    _style_ax(
+        ax,
+        "Absolutist Word Rate by Role\n(Dutch function-word list; Al-Mosaiwi & Johnstone 2018)",
+        "Role", "Mean absolutist word rate (%)",
+    )
+    fig.tight_layout()
     return fig
 
 
@@ -455,12 +500,16 @@ def build_pdf(df: pd.DataFrame, liwc_cols: list[str],
         save(_section_divider("Section 3 — Top Categories Over Time"))
         save(fig_category_over_time(df, liwc_cols))
 
+        if "absolutist_rate" in df.columns:
+            save(_section_divider("Section 4 — Absolutist Words"))
+            save(fig_absolutist_by_role(df))
+
     if pdf is not None:
         _write(pdf)
     else:
-        print(f"Building PDF → {pdf_path}")
-        with pdf_backend.PdfPages(pdf_path) as writer:
-            _write(writer)
+        with Spinner(f"Building PDF → {pdf_path}"):
+            with pdf_backend.PdfPages(pdf_path) as writer:
+                _write(writer)
         print(f"  PDF saved → {pdf_path}")
 
 
@@ -468,16 +517,13 @@ def build_pdf(df: pd.DataFrame, liwc_cols: list[str],
 # Main
 # =============================================================================
 
-_DATASET_SUFFIX = {None: "", "combined": "", "old": "_old", "new_only": "_new_only"}
-
-
 def main(dataset: str | None = None):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    suffix       = _DATASET_SUFFIX.get(dataset, "")
-    input_path   = f"output/preprocessed/messages_community{suffix}.csv"
-    scores_out   = os.path.join(OUTPUT_DIR, f"liwc_scores{suffix}.csv")
-    user_out     = os.path.join(OUTPUT_DIR, f"liwc_per_user{suffix}.csv")
-    pdf_out      = os.path.join(OUTPUT_DIR, f"liwc_report{suffix}.pdf")
+    ds           = dataset or "combined"
+    input_path   = structured_path(OUTPUT_DIR, ds)
+    scores_out   = variant_path(OUTPUT_DIR, "liwc_scores.csv",   ds)
+    user_out     = variant_path(OUTPUT_DIR, "liwc_per_user.csv", ds)
+    pdf_out      = variant_path(OUTPUT_DIR, "liwc_report.pdf",   ds)
 
     print("Loading messages…")
     df = pd.read_csv(input_path)
@@ -497,8 +543,11 @@ def main(dataset: str | None = None):
     term_to_categories, category_map = load_liwc(LIWC_DICT_PATH)
     all_categories = sorted(set(category_map.values()))
 
+    term_to_categories, all_categories = ensure_fps(term_to_categories, all_categories)
+
     print("\nScoring messages…")
     df, liwc_cols = score_messages(df, term_to_categories, all_categories)
+    df["absolutist_rate"] = df[TEXT_COL].apply(_absolutist_rate)
 
     df.to_csv(scores_out, index=False)
     print(f"  Saved scored messages → {scores_out}")
@@ -525,6 +574,6 @@ def main(dataset: str | None = None):
 if __name__ == "__main__":
     import argparse
     ap = argparse.ArgumentParser(description="LIWC analysis report")
-    ap.add_argument("--dataset", choices=["old", "new_only", "combined"])
+    add_dataset_arg(ap)
     args = ap.parse_args()
     main(dataset=args.dataset)

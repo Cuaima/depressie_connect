@@ -31,22 +31,24 @@ import pandas as pd
 
 from utils.thread_utils import label_roles
 from utils.CDS import process_dataset
+from utils.absolutist import absolutist_rate as _absolutist_rate
 
 import exploration         as ex
 import exploratory_analysis as ea
 import cds_prevalence      as cp
 import liwc_analysis       as la
 
+from dataset_io import add_dataset_arg, variant_path, subtitle_for
+
 warnings.filterwarnings("ignore")
 
-OUTPUT_DIR     = "output"
+OUTPUT_DIR = "output"
 _DATASET_LABEL = {
-    None:        "Combined Dataset",
-    "combined":  "Combined Dataset",
-    "old":       "Old Dataset",
-    "new_only":  "New Dataset",
+    None:       "Combined Dataset",
+    "combined": "Combined Dataset",
+    "old":      "Old Dataset",
+    "new_only": "New Dataset",
 }
-_DATASET_SUFFIX = {None: "", "combined": "", "old": "_old", "new_only": "_new_only"}
 
 DATE_COL   = ea.DATE_COL
 TEXT_COL   = ea.TEXT_COL
@@ -88,8 +90,8 @@ def _section_divider(title: str) -> plt.Figure:
 
 def load_and_score(dataset: str | None) -> dict:
     """Load, label, score CDS and LIWC for the given dataset. Returns a result dict."""
-    suffix     = _DATASET_SUFFIX.get(dataset, "")
-    input_path = f"output/preprocessed/messages_community{suffix}.csv"
+    from dataset_io import structured_path
+    input_path = structured_path(OUTPUT_DIR, dataset or "combined")
 
     print(f"Loading {input_path}…")
     df = pd.read_csv(input_path)
@@ -119,10 +121,12 @@ def load_and_score(dataset: str | None) -> dict:
     liwc_cols: list[str] = []
     if os.path.exists(la.LIWC_DICT_PATH):
         print(f"Scoring LIWC from {la.LIWC_DICT_PATH}…")
-        term_to_cats, cat_map = la.load_liwc(la.LIWC_DICT_PATH)
-        all_cats              = sorted(set(cat_map.values()))
-        df, liwc_cols         = la.score_messages(df, term_to_cats, all_cats)
-        df                    = la.add_time_columns(df)
+        term_to_cats, cat_map  = la.load_liwc(la.LIWC_DICT_PATH)
+        all_cats               = sorted(set(cat_map.values()))
+        term_to_cats, all_cats = la.ensure_fps(term_to_cats, all_cats)
+        df, liwc_cols          = la.score_messages(df, term_to_cats, all_cats)
+        df["absolutist_rate"]  = df[TEXT_COL].apply(_absolutist_rate)
+        df                     = la.add_time_columns(df)
     else:
         print(f"  LIWC dictionary not found at {la.LIWC_DICT_PATH} — skipping LIWC section.")
 
@@ -145,9 +149,9 @@ def load_and_score(dataset: str | None) -> dict:
 
 def build_full_report(dataset: str | None = None):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    suffix   = _DATASET_SUFFIX.get(dataset, "")
+    ds       = dataset or "combined"
     label    = _DATASET_LABEL.get(dataset, "Combined Dataset")
-    pdf_path = os.path.join(OUTPUT_DIR, f"full_report{suffix}.pdf")
+    pdf_path = variant_path(OUTPUT_DIR, "full_report.pdf", ds)
 
     data = load_and_score(dataset)
     df            = data["df"]
@@ -201,18 +205,16 @@ def build_full_report(dataset: str | None = None):
 # =============================================================================
 
 def main():
+    from dataset_io import DATASET_CHOICES
     ap = argparse.ArgumentParser(description="Generate the full consolidated analysis report.")
-    ap.add_argument("--dataset", choices=["old", "new_only", "combined"],
-                    help="Which preprocessed dataset to use (default: combined/single-export)")
+    add_dataset_arg(ap)
     ap.add_argument("--all", dest="run_all", action="store_true",
-                    help="Run for old, new_only, and combined datasets sequentially")
+                    help="Run for all three dataset variants sequentially")
     args = ap.parse_args()
 
     if args.run_all:
-        for ds in ["old", "new_only", "combined"]:
-            print(f"\n{'='*60}")
-            print(f"  Dataset: {ds}")
-            print(f"{'='*60}")
+        for ds in DATASET_CHOICES:
+            print(f"\n{'='*60}\n  Dataset: {ds}\n{'='*60}")
             build_full_report(dataset=ds)
     else:
         build_full_report(dataset=args.dataset)

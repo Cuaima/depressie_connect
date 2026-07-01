@@ -21,6 +21,7 @@ from collections import Counter
 import emoji as emoji_lib
 
 from utils.thread_utils import label_roles
+from dataset_io import add_dataset_arg, structured_path, variant_path
 
 warnings.filterwarnings("ignore")
 
@@ -34,7 +35,7 @@ TOPIC_COL   = "ForumTopicID"
 
 # ── Loader ────────────────────────────────────────────────────────────────────
 
-def load_messages(path: str = "output/messages_community.csv") -> pd.DataFrame:
+def load_messages(path: str = "output/messages_structured.csv") -> pd.DataFrame:
     df = pd.read_csv(path)
     df[DATE_COL] = pd.to_datetime(df[DATE_COL], errors="coerce")
     df = df.dropna(subset=[DATE_COL])
@@ -550,7 +551,7 @@ def print_all_statistics(df: pd.DataFrame):
 # PDF report (merged from eda_report.py)
 # =============================================================================
 
-_INPUT_PATH     = "output/preprocessed/messages_community.csv"
+_INPUT_PATH     = "output/messages_structured.csv"
 _OUTPUT_DIR     = "output"
 _PDF_ALL        = os.path.join(_OUTPUT_DIR, "eda_report_all_users.pdf")
 _PDF_MULTI      = os.path.join(_OUTPUT_DIR, "eda_report_multi_posters.pdf")
@@ -1054,18 +1055,15 @@ def save_filtered(df: pd.DataFrame):
     return filtered
 
 
-_DATASET_SUFFIX = {None: "", "combined": "", "old": "_old", "new_only": "_new_only"}
-
-
 def generate_report(path: str | None = None, dataset: str | None = None):
     """Generate EDA PDF reports and filtered CSV from preprocessed community messages."""
     os.makedirs(_OUTPUT_DIR, exist_ok=True)
-    suffix    = _DATASET_SUFFIX.get(dataset, "")
+    ds        = dataset or "combined"
     if path is None:
-        path = f"output/preprocessed/messages_community{suffix}.csv"
-    pdf_all   = os.path.join(_OUTPUT_DIR, f"eda_report_all_users{suffix}.pdf")
-    pdf_multi = os.path.join(_OUTPUT_DIR, f"eda_report_multi_posters{suffix}.pdf")
-    filt_path = os.path.join(_OUTPUT_DIR, f"messages_multi_posters{suffix}.csv")
+        path = structured_path(_OUTPUT_DIR, ds)
+    pdf_all   = variant_path(_OUTPUT_DIR, "eda_report_all_users.pdf",    ds)
+    pdf_multi = variant_path(_OUTPUT_DIR, "eda_report_multi_posters.pdf", ds)
+    filt_path = variant_path(_OUTPUT_DIR, "messages_multi_posters.csv",  ds)
 
     print("\n=== Report 1: All users ===")
     df = pd.read_csv(path)
@@ -1104,12 +1102,12 @@ def generate_report(path: str | None = None, dataset: str | None = None):
 if __name__ == "__main__":
     import argparse
     ap = argparse.ArgumentParser(description="EDA report generator")
-    ap.add_argument("--dataset", choices=["old", "new_only", "combined"])
+    add_dataset_arg(ap)
     ap.add_argument("--stats", action="store_true",
                     help="Print terminal statistics instead of building PDFs")
     args = ap.parse_args()
     if args.stats:
-        df = load_messages()
+        df = load_messages(structured_path(_OUTPUT_DIR, args.dataset))
         print_all_statistics(df)
     else:
         generate_report(dataset=args.dataset)

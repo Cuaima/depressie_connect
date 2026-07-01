@@ -23,14 +23,17 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf as pdf_backend
 from scipy import stats as scipy_stats
+from statsmodels.stats.multitest import multipletests
 
 from utils.CDS import process_dataset, load_CDS
 from utils.thread_utils import label_roles
+from utils.spinner import Spinner
+from dataset_io import add_dataset_arg, structured_path, variant_path
 
 warnings.filterwarnings("ignore")
 
 # ── Config ────────────────────────────────────────────────────────────────────
-INPUT_PATH    = "output/preprocessed/messages_community.csv"
+INPUT_PATH    = "output/messages_structured.csv"
 SCORED_PATH   = "output/cds_scores.csv"       # written by exploratory_analysis.py
 OUTPUT_DIR    = "output"
 PDF_PATH      = os.path.join(OUTPUT_DIR, "cds_prevalence_report.pdf")
@@ -177,6 +180,24 @@ def compute_category_ranking(df: pd.DataFrame) -> pd.DataFrame:
             "n_matches_posts":     match_posts,
             "n_matches_replies":   match_replies,
         })
+
+    # Benjamini–Hochberg FDR correction across all category tests
+    valid_pvals = [r["p_value"] for r in rows if r["p_value"] == r["p_value"]]
+    if valid_pvals:
+        _, corrected, _, _ = multipletests(valid_pvals, method="fdr_bh")
+        ci = 0
+        for r in rows:
+            if r["p_value"] == r["p_value"]:
+                r["p_value_bh"]          = round(float(corrected[ci]), 4)
+                r["sig_after_correction"] = bool(corrected[ci] < 0.05)
+                ci += 1
+            else:
+                r["p_value_bh"]          = None
+                r["sig_after_correction"] = False
+    else:
+        for r in rows:
+            r["p_value_bh"]          = None
+            r["sig_after_correction"] = False
 
     return (
         pd.DataFrame(rows)
@@ -411,20 +432,23 @@ def fig_stats_table(cat_ranking: pd.DataFrame) -> plt.Figure:
     """Renders the category ranking as a formatted table figure."""
     display_cols = [
         "category", "prevalence_pct", "prevalence_posts_pct",
-        "prevalence_replies_pct", "ratio_post_reply", "p_value", "cramers_v"
+        "prevalence_replies_pct", "ratio_post_reply", "p_value", "p_value_bh", "cramers_v"
     ]
     col_labels = [
         "Category", "Overall %", "Posts %", "Replies %",
-        "Ratio P/R", "p-value", "Cramér's V"
+        "Ratio P/R", "p-value", "p-BH", "Cramér's V"
     ]
     cols_present = [c for c in display_cols if c in cat_ranking.columns]
     col_labels_present = [col_labels[display_cols.index(c)] for c in cols_present]
 
     cell_data = []
-    for _, row in cat_ranking.iterrows():
+    sig_rows: set[int] = set()
+    for i, (_, row) in enumerate(cat_ranking.iterrows()):
         cell_data.append([str(row[c]) for c in cols_present])
+        if row.get("sig_after_correction", False):
+            sig_rows.add(i)
 
-    fig, ax = plt.subplots(figsize=(14, max(3, len(cat_ranking) * 0.5 + 1)))
+    fig, ax = plt.subplots(figsize=(15, max(3, len(cat_ranking) * 0.5 + 1)))
     ax.axis("off")
     tbl = ax.table(
         cellText=cell_data,
@@ -441,11 +465,16 @@ def fig_stats_table(cat_ranking: pd.DataFrame) -> plt.Figure:
         tbl[(0, j)].set_text_props(color="white", fontweight="bold")
     for i in range(1, len(cell_data) + 1):
         for j in range(len(col_labels_present)):
-            if i % 2 == 0:
+            if (i - 1) in sig_rows:
+                tbl[(i, j)].set_facecolor("#FFF3CD")   # yellow = survives BH correction
+            elif i % 2 == 0:
                 tbl[(i, j)].set_facecolor(SECONDARY)
 
-    ax.set_title("CDS Category Ranking with Statistical Tests",
-                 fontsize=12, fontweight="bold", color=PRIMARY, pad=10)
+    ax.set_title(
+        "CDS Category Ranking with Statistical Tests\n"
+        "(p-BH = Benjamini–Hochberg corrected; yellow rows significant after correction)",
+        fontsize=11, fontweight="bold", color=PRIMARY, pad=10,
+    )
     fig.tight_layout()
     return fig
 
@@ -487,9 +516,9 @@ def build_pdf(df: pd.DataFrame, cds_phrases: pd.DataFrame,
     if pdf is not None:
         _write(pdf)
     else:
-        print(f"Building PDF → {pdf_path}")
-        with pdf_backend.PdfPages(pdf_path) as writer:
-            _write(writer)
+        with Spinner(f"Building PDF → {pdf_path}"):
+            with pdf_backend.PdfPages(pdf_path) as writer:
+                _write(writer)
         print(f"  PDF saved → {pdf_path}")
 
 
@@ -497,17 +526,14 @@ def build_pdf(df: pd.DataFrame, cds_phrases: pd.DataFrame,
 # Main
 # =============================================================================
 
-_DATASET_SUFFIX = {None: "", "combined": "", "old": "_old", "new_only": "_new_only"}
-
-
 def main(dataset: str | None = None):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    suffix         = _DATASET_SUFFIX.get(dataset, "")
-    input_path     = f"output/preprocessed/messages_community{suffix}.csv"
-    scored_path    = os.path.join(OUTPUT_DIR, f"cds_scores{suffix}.csv")
-    pdf_path_out   = os.path.join(OUTPUT_DIR, f"cds_prevalence_report{suffix}.pdf")
-    cat_rank_out   = os.path.join(OUTPUT_DIR, f"cds_category_ranking{suffix}.csv")
-    phr_rank_out   = os.path.join(OUTPUT_DIR, f"cds_phrase_ranking{suffix}.csv")
+    ds             = dataset or "combined"
+    input_path     = structured_path(OUTPUT_DIR, ds)
+    scored_path    = variant_path(OUTPUT_DIR, "cds_scores.csv",              ds)
+    pdf_path_out   = variant_path(OUTPUT_DIR, "cds_prevalence_report.pdf",   ds)
+    cat_rank_out   = variant_path(OUTPUT_DIR, "cds_category_ranking.csv",    ds)
+    phr_rank_out   = variant_path(OUTPUT_DIR, "cds_phrase_ranking.csv",      ds)
 
     print("Loading and scoring data…")
     df, cds_phrases = get_scored_df(input_path=input_path, scored_path=scored_path)
@@ -546,6 +572,6 @@ def main(dataset: str | None = None):
 if __name__ == "__main__":
     import argparse
     ap = argparse.ArgumentParser(description="CDS prevalence report")
-    ap.add_argument("--dataset", choices=["old", "new_only", "combined"])
+    add_dataset_arg(ap)
     args = ap.parse_args()
     main(dataset=args.dataset)
