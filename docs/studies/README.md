@@ -20,3 +20,25 @@ anchor.
 | `lib_jmir-2023-1-e51712.pdf` | Chatbots for emotional support across cultures | Report-only |
 | `lib_peerj-cs-2828.pdf` | DRIVE-model mental-health detection in text during COVID-19 | Report-only (secondary context for the pandemic-period section) |
 | `dorien.pdf` | **Duplicate** of `Smit qual evaluation depressie connect.pdf` (identical content) | — consider deleting |
+
+---
+
+# Analysis → Studies Map
+
+The reverse view, keyed by deliverable/analysis rather than by paper — for the
+thesis write-up, answering "which studies justify *this* analysis?". "Method"
+studies motivate the technique; "grounding" studies justify why the feature or
+choice matters for depression/peer support.
+
+| Analysis (script / output) | Supporting studies | Role |
+|---|---|---|
+| **CDS prevalence** (`cds_prevalence.py`, `exploratory_analysis.py`, `utils/CDS.py`) | 113 helpline manuscript (`manuscript_R1_submission.pdf`) | Method — 12-type CDS n-gram design and Dutch markers; comparison target for forum vs. helpline prevalence |
+| **CDS statistics** (per-user Mann-Whitney, `docs/statistical_decisions.md` §2) | 113 helpline manuscript | Grounding — aggregate-level reporting to avoid pseudo-replication |
+| **LIWC — FPS pronouns** (`liwc_analysis.py` `ensure_fps`, `user_longitudinal.py`) | Smirnova 2018; Eichstaedt 2018 | Grounding — elevated first-person-singular use as a replicated depression marker |
+| **LIWC — absolutist words** (`utils/absolutist.py`, `liwc_analysis.py`, `full_report.py`) | Al-Mosaiwi & Johnstone 2018 (+2019 corrigendum) | Method + grounding — the 19-word set and its specificity to anxiety/depression |
+| **Pandemic-period comparison** (`pandemic_period_analysis.py`) | Yahya & Abdul Rahim 2023 | Method — feature set (§2.3) and pre/during/post design; DRIVE/peerj (`lib_peerj-cs-2828.pdf`) as secondary COVID-coping context |
+| **LIWC-22 validation** (`liwc22_cli_runner.py`, `liwc_validation_report.py`) | — | Internal cross-check of the custom scorer; no external paper anchor |
+| **Moderator exclusion** (`config.py` `MODERATOR_POSTER_IDS`, `preprocess.py`) | Milne et al. 2019 | Grounding — moderators' distinct triage/role behaviour vs. peers |
+| **Thread-success / reply labelling** (`postprocess.py` `label_thread_success`) | Smit quant DC eval; Liu et al. 2021 (`lib_intr-03-2021-0189.pdf`) | Grounding — receiving replies as the support mechanism; drivers of support acquisition |
+| **Post-vs-reply classification** (`build_classification_dataset.py`, `postvscomment/`) | Ahani et al. (SSD) | Method — social support detection as an NLP task with psycholinguistic features |
+| **Dataset description / EDA** (`exploration.py`, `eda_report.py`, future `DATASHEET.md`) | Smit qual DC eval; Smit experiential-knowledge; Chin 2023 chatbots | Grounding — what Depression Connect is, peer-support content, broader digital-support context |
