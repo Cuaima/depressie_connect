@@ -25,6 +25,10 @@ COMMUNITY_ACCOUNT_IDS  = {2, 3}   # the two real communities
 # ── Moderator exclusions ──────────────────────────────────────────────────────
 # Raw PosterID UUIDs of confirmed moderators. Add IDs after reviewing
 # output/moderator_review.csv.
+# Moderators communicate by platform role (welcoming, triage, redirecting),
+# not as peers — see docs/studies/lib_jmir-2019-4-e11410.pdf (Milne et al.
+# 2019) on the distinct moderator role in peer-support platforms; rationale
+# in docs/statistical_decisions.md §4.
 MODERATOR_POSTER_IDS: set[str] = set([
     "22047A60-621D-4CB5-AC22-D68C649B3990",
     "4DAC7C7F-D353-4342-96BA-DE923C27E3B6",

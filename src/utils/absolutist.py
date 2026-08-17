@@ -2,8 +2,12 @@ from __future__ import annotations
 import re
 
 # Dutch absolutist words — translated from the 19-word English set in
-# Al-Mosaiwi & Johnstone (2018). REVIEW with a native Dutch speaker before
-# treating results as scientifically reliable.
+# Al-Mosaiwi & Johnstone (2018), who found absolutist word use elevated in
+# depression/anxiety forums and specific to them (vs. general negative affect).
+# See docs/studies/al-mosaiwi-johnstone-2018-...pdf (includes the 2019
+# corrigendum: corrected SDs/Cohen's d, conclusions unchanged).
+# REVIEW with a native Dutch speaker before treating results as
+# scientifically reliable.
 ABSOLUTIST_WORDS_NL: list[str] = [
     "altijd",       # always
     "nooit",        # never

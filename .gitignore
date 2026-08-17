@@ -117,3 +117,4 @@ docker-compose.*.yml
 
 # Claude Code
 .claude/
+docs/studies/*.pdf

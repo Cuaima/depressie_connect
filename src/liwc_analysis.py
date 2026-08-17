@@ -166,7 +166,12 @@ def load_liwc(path: str) -> tuple[dict[str, list[str]], dict[str, str]]:
         return load_liwc_dic(path)
 
 
-# First-person singular — LIWC category detection and Dutch fallback
+# First-person singular — LIWC category detection and Dutch fallback.
+# Elevated FPS pronoun use is a replicated linguistic marker of depression:
+# see docs/studies/Smirnova 2018.pdf (FPS distinguishes mild depression from
+# normal sadness) and docs/studies/eichstaedt-et-al-2018-...pdf (FPS among
+# top predictors of medical-record depression from Facebook language);
+# background in docs/statistical_decisions.md §6.
 _FPS_LIWC_CATEGORY = "i"       # standard LIWC-15 category name
 _FPS_CATEGORY_NL   = "fps_dutch"
 _FPS_DUTCH         = ["ik", "mij", "me", "mijn", "mezelf"]

@@ -5,6 +5,11 @@
 #   label="topic"   → the first (oldest) message of each forum thread
 #   label="message" → all subsequent replies
 #
+# Post-vs-reply classification is a stepping stone toward social support
+# detection (supportive replies vs. support-seeking posts) — cf.
+# docs/studies/ahani.pdf (Ahani et al., Social Support Detection as an NLP
+# task, incl. psycholinguistic features like the ones this pipeline extracts).
+#
 # Only includes posters from COMMUNITY_ACCOUNT_IDS (2, 3).
 # Superusers and intro-group posts are already excluded by the pipeline;
 # call preprocess.run_pipeline() first, or pass pre-cleaned DataFrames.

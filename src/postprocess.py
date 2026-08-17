@@ -141,6 +141,12 @@ def label_thread_success(messages: pd.DataFrame) -> pd.DataFrame:
     Threads WITH replies  → thread_has_replies = True  (positive class candidate)
     Threads WITHOUT replies → thread_has_replies = False (negative class)
 
+    Receiving peer replies is the forum's mechanism of support: on Depression
+    Connect specifically, engagement is associated with recovery-related
+    empowerment (docs/studies/Smit quant evaluatie DC.pdf); what drives
+    support acquisition in online health communities is studied in
+    docs/studies/lib_intr-03-2021-0189.pdf.
+
     The final supportiveness label is assigned after manual annotation.
     """
     print("\n[4] Labeling thread success...")

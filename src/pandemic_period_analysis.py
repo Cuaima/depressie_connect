@@ -2,7 +2,8 @@
 # pandemic_period_analysis.py  –  psycholinguistic markers across pandemic periods
 #
 # Operationalizes Yahya & Abdul Rahim (2023), "Linguistic markers of
-# depression" (Language and Health 1, 36-50) on the Depression Connect forum:
+# depression" (Language and Health 1, 36-50; docs/studies/Yahya.pdf) on the
+# Depression Connect forum:
 # compares LIWC-style features across three pandemic periods (pre / during /
 # post), per dataset variant.
 #

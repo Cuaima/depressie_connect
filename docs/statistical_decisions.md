@@ -32,6 +32,8 @@ This is a form of *pseudo-replication*: inflating the effective sample size beyo
 **The fix:**  
 For each category and each role (`post` / `reply`), we first aggregate to the user level: each user's rate for that role is the mean of their CDS indicator across all their messages in that role. We then compare the distribution of per-user rates between roles using Mann-Whitney U. Each user contributes at most one observation per role, which satisfies the independence assumption at the right level of analysis.
 
+The test is only run when both role groups contain at least 5 users; below that, the test statistics are reported as missing (`NaN`) rather than computed on unstable groups.
+
 **Effect size:** Rank-biserial correlation, `r = 1 − 2U / (n₁ · n₂)`. This is the natural effect size for Mann-Whitney U and is interpretable as the probability that a randomly drawn post-user has a higher CDS rate than a randomly drawn reply-user, rescaled to [−1, 1].
 
 **Limitation to note in write-up:**  
@@ -87,6 +89,8 @@ Introduction threads and recreational groups (poetry, word games, off-topic chat
 
 **Why:**  
 `messages_community.csv` contains all messages that passed language detection and anonymisation, including intro/welcome groups and single-post users. `messages_structured.csv` additionally has the group exclusions (§4), the user threshold (§3), thread structure flags (`is_initial_post`, `reply_index`, `thread_has_replies`), and the normalised text column (`text_normalized`). Using the structured file ensures every analysis script operates on the same, consistently filtered population.
+
+**Anonymization placeholders are stripped before analysis.** NER anonymization replaces entities with placeholders like `[ENTITY_PERSON_1]`. These stay in the stored `MessageText` (they are the anonymization) but are removed before any scoring or tokenization — both in `text_normalized` (postprocess) and at text load in every analysis script (`utils/thread_utils.strip_entity_placeholders`). Left in, they tokenize into words (`of`, `work`, `art`) that inflate LIWC function-word scores, word counts, and word-frequency charts.
 
 ---
 
