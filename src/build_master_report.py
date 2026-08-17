@@ -41,13 +41,16 @@ PRIMARY    = "#2E5E8E"
 SECONDARY  = "#EEF3F8"
 
 # (script_name, base_filename, section_title)  –  order = order in merged PDF
+# Note: liwc22_cli_runner.py is a prerequisite for section 7 but produces only
+# a CSV, not a PDF, so it is not listed here — see run_sub_reports() below.
 SUB_REPORTS = [
-    ("eda_report.py",            "eda_report_all_users.pdf",     "1. EDA – All Users"),
-    ("eda_report.py",            "eda_report_multi_posters.pdf", "2. EDA – Multi-Posters Only"),
-    ("exploratory_analysis.py",  "exploratory_report.pdf",       "3. Time Series & CDS Prevalence"),
-    ("cds_prevalence.py",        "cds_prevalence_report.pdf",    "4. Cognitive Distortion (CDS) Prevalence"),
-    ("liwc_analysis.py",         "liwc_report.pdf",              "5. LIWC Psycholinguistic Analysis"),
-    ("user_longitudinal.py",     "user_longitudinal_report.pdf", "6. Per-User Longitudinal Trends"),
+    ("eda_report.py",               "eda_report_all_users.pdf",          "1. EDA – All Users"),
+    ("eda_report.py",               "eda_report_multi_posters.pdf",      "2. EDA – Multi-Posters Only"),
+    ("exploratory_analysis.py",     "exploratory_report.pdf",            "3. Time Series & CDS Prevalence"),
+    ("cds_prevalence.py",           "cds_prevalence_report.pdf",         "4. Cognitive Distortion (CDS) Prevalence"),
+    ("liwc_analysis.py",            "liwc_report.pdf",                   "5. LIWC Psycholinguistic Analysis"),
+    ("user_longitudinal.py",        "user_longitudinal_report.pdf",      "6. Per-User Longitudinal Trends"),
+    ("liwc_validation_report.py",   "liwc_validation_report.pdf",        "7. LIWC-22 Validation"),
 ]
 
 
@@ -63,7 +66,7 @@ def _title_page(dataset: str) -> plt.Figure:
     ax.text(0.5, 0.38, f"Dataset variant: {subtitle_for(dataset)}", transform=ax.transAxes,
             ha="center", va="center", fontsize=13, color="#DDDDDD")
     ax.text(0.5, 0.12,
-            "EDA · Time series · CDS prevalence · LIWC · Per-user longitudinal trends",
+            "EDA · Time series · CDS prevalence · LIWC · Longitudinal trends · LIWC-22 validation",
             transform=ax.transAxes, ha="center", va="center", fontsize=9, color="#AAAAAA")
     return fig
 
@@ -86,6 +89,17 @@ def _save_temp_pdf(fig: plt.Figure, path: str):
 
 def run_sub_reports(dataset: str, top_n: int = 5):
     """Call each sub-report script for this dataset variant."""
+    # liwc22_cli_runner.py is a prerequisite for section 7: run it first so
+    # liwc22_scores.csv exists before liwc_validation_report.py is called.
+    liwc22_scores = variant_path(OUTPUT_DIR, "liwc22_scores.csv", dataset)
+    if not os.path.exists(liwc22_scores):
+        print(f"\n=== Running liwc22_cli_runner.py (prerequisite for section 7) ===")
+        subprocess.run(
+            [sys.executable, os.path.join("src", "liwc22_cli_runner.py"),
+             "--dataset", dataset],
+            check=True,
+        )
+
     for script, _, _ in SUB_REPORTS:
         cmd = [sys.executable, os.path.join("src", script), "--dataset", dataset]
         if script == "user_longitudinal.py":
@@ -108,7 +122,15 @@ def merge_reports(dataset: str) -> str:
         sub_path = variant_path(OUTPUT_DIR, base_filename, dataset)
         if not os.path.exists(sub_path):
             missing.append(sub_path)
-            print(f"  SKIP (not found): {sub_path}")
+            if "liwc_validation" in base_filename:
+                ds_flag = f"DATASET={dataset}"
+                print(f"\n  ⚠  SKIP — LIWC-22 validation report not found: {sub_path}")
+                print(f"     Section 7 will be absent from the master report.")
+                print(f"     To generate it, run:")
+                print(f"       make liwc-validate {ds_flag}")
+                print(f"     (requires LIWC-22 app installed and liwc_scores already present)\n")
+            else:
+                print(f"  SKIP (not found): {sub_path}")
             continue
 
         divider_pdf = os.path.join(tmp_dir, "divider.pdf")

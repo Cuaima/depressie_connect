@@ -128,7 +128,11 @@ def get_scored_df(input_path: str | None = None,
 def compute_category_ranking(df: pd.DataFrame) -> pd.DataFrame:
     """
     For each CDS category: prevalence overall, in posts, and in replies.
-    Also computes a Chi-square test (post vs reply) and effect size (Cramér's V).
+
+    Statistical test: Mann-Whitney U on per-user CDS rates (not message-level),
+    which avoids pseudo-replication from prolific users. Each user contributes one
+    observation per role (their mean CDS rate across their messages in that role).
+    Effect size: rank-biserial correlation r = 1 − 2U / (n1·n2).
     """
     cat_cols = [c for c in CDS_CATEGORY_COLS if c in df.columns]
     if not cat_cols:
@@ -142,43 +146,49 @@ def compute_category_ranking(df: pd.DataFrame) -> pd.DataFrame:
 
     rows = []
     for col in cat_cols:
-        n_total  = len(df)
-        n_posts  = len(posts)
-        n_replies = len(replies)
-
-        match_total  = int(df[col].sum())
-        match_posts  = int(posts[col].sum())
+        match_total   = int(df[col].sum())
+        match_posts   = int(posts[col].sum())
         match_replies = int(replies[col].sum())
 
-        prev_total  = match_total  / n_total   * 100
-        prev_posts  = match_posts  / n_posts   * 100  if n_posts  > 0 else 0
-        prev_replies = match_replies / n_replies * 100 if n_replies > 0 else 0
+        prev_total   = df[col].mean() * 100
+        prev_posts   = posts[col].mean()   * 100 if len(posts)   > 0 else 0.0
+        prev_replies = replies[col].mean() * 100 if len(replies) > 0 else 0.0
 
-        # Chi-square: posts vs replies
-        contingency = np.array([
-            [match_posts,  n_posts   - match_posts],
-            [match_replies, n_replies - match_replies],
-        ])
-        if contingency.min() > 0:
-            chi2, p_val, _, _ = scipy_stats.chi2_contingency(contingency)
-            n = n_posts + n_replies
-            cramers_v = np.sqrt(chi2 / (n * (min(contingency.shape) - 1)))
+        # Aggregate to per-user-role mean CDS rate, then compare with Mann-Whitney U.
+        # Users who both post and reply appear in both groups; treating them as
+        # independent is a mild conservatism but far better than message-level chi-square.
+        user_role = (
+            df.groupby([POSTER_COL, "role"])[col]
+            .mean()
+            .reset_index(name="user_rate")
+        )
+        post_rates  = user_role.loc[user_role["role"] == "post",  "user_rate"].values
+        reply_rates = user_role.loc[user_role["role"] == "reply", "user_rate"].values
+
+        if len(post_rates) >= 5 and len(reply_rates) >= 5:
+            u_stat, p_val = scipy_stats.mannwhitneyu(
+                post_rates, reply_rates, alternative="two-sided"
+            )
+            n1, n2 = len(post_rates), len(reply_rates)
+            rank_biserial = float(1 - 2 * u_stat / (n1 * n2))
         else:
-            chi2, p_val, cramers_v = np.nan, np.nan, np.nan
+            u_stat, p_val, rank_biserial = np.nan, np.nan, np.nan
 
         rows.append({
-            "category":            col,
-            "prevalence_pct":      round(prev_total,  2),
-            "prevalence_posts_pct": round(prev_posts,  2),
+            "category":               col,
+            "prevalence_pct":         round(prev_total,   2),
+            "prevalence_posts_pct":   round(prev_posts,   2),
             "prevalence_replies_pct": round(prev_replies, 2),
-            "ratio_post_reply":    round(prev_posts / prev_replies, 3)
-                                   if prev_replies > 0 else np.nan,
-            "chi2":                round(chi2, 3)     if not np.isnan(chi2) else np.nan,
-            "p_value":             round(p_val, 4)    if not np.isnan(p_val) else np.nan,
-            "cramers_v":           round(cramers_v, 4) if not np.isnan(cramers_v) else np.nan,
-            "n_matches_total":     match_total,
-            "n_matches_posts":     match_posts,
-            "n_matches_replies":   match_replies,
+            "ratio_post_reply":       round(prev_posts / prev_replies, 3)
+                                      if prev_replies > 0 else np.nan,
+            "n_users_posts":          int(n1) if not np.isnan(u_stat) else np.nan,
+            "n_users_replies":        int(n2) if not np.isnan(u_stat) else np.nan,
+            "u_stat":                 round(u_stat, 1)        if not np.isnan(u_stat)        else np.nan,
+            "p_value":                round(p_val,  4)        if not np.isnan(p_val)         else np.nan,
+            "rank_biserial":          round(rank_biserial, 4) if not np.isnan(rank_biserial) else np.nan,
+            "n_matches_total":        match_total,
+            "n_matches_posts":        match_posts,
+            "n_matches_replies":      match_replies,
         })
 
     # Benjamini–Hochberg FDR correction across all category tests
@@ -432,11 +442,14 @@ def fig_stats_table(cat_ranking: pd.DataFrame) -> plt.Figure:
     """Renders the category ranking as a formatted table figure."""
     display_cols = [
         "category", "prevalence_pct", "prevalence_posts_pct",
-        "prevalence_replies_pct", "ratio_post_reply", "p_value", "p_value_bh", "cramers_v"
+        "prevalence_replies_pct", "ratio_post_reply",
+        "n_users_posts", "n_users_replies",
+        "p_value", "p_value_bh", "rank_biserial",
     ]
     col_labels = [
         "Category", "Overall %", "Posts %", "Replies %",
-        "Ratio P/R", "p-value", "p-BH", "Cramér's V"
+        "Ratio P/R", "N users (post)", "N users (reply)",
+        "p-value (MWU)", "p-BH", "Rank-biserial r",
     ]
     cols_present = [c for c in display_cols if c in cat_ranking.columns]
     col_labels_present = [col_labels[display_cols.index(c)] for c in cols_present]
@@ -471,7 +484,7 @@ def fig_stats_table(cat_ranking: pd.DataFrame) -> plt.Figure:
                 tbl[(i, j)].set_facecolor(SECONDARY)
 
     ax.set_title(
-        "CDS Category Ranking with Statistical Tests\n"
+        "CDS Category Ranking — Mann-Whitney U (per-user rates) with BH correction\n"
         "(p-BH = Benjamini–Hochberg corrected; yellow rows significant after correction)",
         fontsize=11, fontweight="bold", color=PRIMARY, pad=10,
     )

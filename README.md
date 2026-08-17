@@ -52,10 +52,13 @@ depression_connect_project/
 │   │   └── main.py
 │   ├── postvscomment/             # Experimental post-vs-reply classifier
 │   │   └── postvscomment.py
+│   ├── liwc22_cli_runner.py       # LIWC-22 CLI wrapper → liwc22_scores.csv
+│   ├── liwc_validation_report.py  # Custom scorer vs LIWC-22 comparison PDF
 │   ├── utils/                     # Shared utilities
-│   │   ├── CDS.py                 # Cognitive distortion schemata loader + scorer
+│   │   ├── CDS.py                 # Cognitive distortion schemata loader + scorer (gitignored)
 │   │   ├── thread_utils.py        # label_roles(), NLP helpers (tokenize, sentence stats, emoji)
-│   │   └── absolutist.py          # Dutch absolutist word list + scoring functions
+│   │   ├── absolutist.py          # Dutch absolutist word list + scoring functions
+│   │   └── spinner.py             # Animated terminal spinner for long-running steps
 │   └── app.py                     # Streamlit dashboard
 │
 ├── scripts/                       # One-off diagnostic and inspection utilities
@@ -110,6 +113,11 @@ Run scripts in this order. Steps 1–3 must each be run once per dataset when wo
    cds_prevalence.py          →  CDS category & phrase ranking
    liwc_analysis.py           →  LIWC psycholinguistic features
    user_longitudinal.py       →  per-user CDS + LIWC time series (top N posters)
+
+5b. (optional, requires LIWC-22 app installed and licensed)
+   liwc22_cli_runner.py       →  run LIWC-22 CLI → liwc22_scores.csv
+   liwc_validation_report.py  →  compare custom scorer vs LIWC-22 → liwc_validation_report.pdf
+        ↓  must run liwc_analysis.py first so liwc_scores.csv exists
 
 6. Choose one consolidated PDF approach:
 
@@ -212,6 +220,8 @@ All analysis scripts read from `output/messages_structured.csv` (the postprocess
 | `cds_prevalence.py` | `messages_structured.csv` | `cds_prevalence_report.pdf`, `cds_category_ranking.csv`, `cds_phrase_ranking.csv` |
 | `liwc_analysis.py` | `messages_structured.csv` | `liwc_report.pdf`, `liwc_scores.csv`, `liwc_per_user.csv` |
 | `user_longitudinal.py` | `messages_structured.csv` | `user_longitudinal_report.pdf` |
+| `liwc22_cli_runner.py` *(optional)* | `messages_structured.csv` | `liwc22_scores.csv` |
+| `liwc_validation_report.py` *(optional)* | `liwc_scores.csv` + `liwc22_scores.csv` | `liwc_validation_report.pdf`, `liwc_validation_comparison.csv` |
 
 The EDA report (`exploration.py`) includes a **Role-Based Analysis** section at the end of each PDF:
 
@@ -340,6 +350,37 @@ make master-report-all    # all three dataset variants
 make app          # launch Streamlit dashboard
 ```
 
+### LIWC-22 validation *(optional, requires LIWC-22 app)*
+
+Runs the official LIWC-22 CLI against the same structured messages and compares its scores category-by-category with the custom scorer. Produces a validation PDF (section 7 in the master report).
+
+**Prerequisites:**
+- LIWC-22 app installed at `/Applications/LIWC-22.app` and licence activated (open the GUI once)
+- Dutch `.dicx` dictionary file at `data/LIWC2015 Dictionary - Dutch.dicx`
+- `make liwc` must have run first so `liwc_scores.csv` exists for the comparison
+- Override paths if needed: `LIWC22_CLI=... LIWC22_DICT=... make liwc-validate`
+
+```bash
+make liwc22               # run LIWC-22 CLI → liwc22_scores.csv
+make liwc-validate        # run CLI + produce validation report PDF
+make liwc22-all           # LIWC-22 scores for old, new_only, and combined
+make liwc-validate-all    # full validation for all three dataset variants
+```
+
+The validation report includes:
+1. Per-category Pearson r and MAE (mean absolute difference in percentage points) between scorers
+2. Scatter plots for the most divergent categories
+3. A note explaining why Analytic / Clout / Authentic / Tone are absent (they require the built-in English LIWC-22 dictionary, not an external `.dicx` file)
+4. Coverage differences — categories present in one scorer but not the other
+5. Word-count agreement as a tokenisation sanity check
+
+```bash
+# Full workflow for one dataset (liwc must run before liwc-validate)
+make pipeline DATASET=combined
+make liwc DATASET=combined
+make liwc-validate DATASET=combined
+```
+
 Any analysis target accepts a `DATASET=` override:
 
 ```bash
@@ -382,7 +423,7 @@ Place the following raw CSVs in `data/` before running the pipeline:
 | `topics.csv` | Thread metadata (ForumTopicID, ForumGroupID) |
 | `messages.csv` | Raw messages (PosterID, ForumTopicID, MessageText, PostDate) |
 | `data/new/*.csv` | New-format exports, semicolon-separated *(step 0 only)* |
-| `data/LIWC2015Dutch.dic` | Dutch LIWC dictionary *(step 3 only)* |
+| `data/LIWC2015 Dictionary - Dutch.dicx` | Dutch LIWC-2015 dictionary *(steps 3 and 5b)* |
 
 ## Configuration
 
@@ -394,7 +435,8 @@ All pipeline settings are in [src/config.py](src/config.py). Key options:
 | `COMMUNITY_ACCOUNT_IDS` | `{2, 3}` | Account IDs for the real communities |
 | `MODERATOR_POSTER_IDS` | 8 UUIDs | Confirmed moderator poster IDs to exclude |
 | `INTRO_GROUP_KEYWORDS` | see file | Group name substrings that mark off-topic/welcome groups |
-| `MIN_WORD_COUNT` | `1` | Minimum words for a message to be kept |
+| `MIN_WORD_COUNT` | `5` | Minimum words for a message to be kept |
+| `MIN_POSTS_PER_USER` | `5` | Minimum total posts for a user to be included (applied in postprocess.py) |
 | `ANONYMIZE_TEXT` | `True` | Run NER-based text anonymization |
 | `REPLACE_ORIGINAL_TEXT` | `True` | Replace original text with anonymized version in output |
 | `EXPORT_ENTITY_REVIEW` | `True` | Write original vs anonymized text to a review CSV |
@@ -416,7 +458,10 @@ All pipeline settings are in [src/config.py](src/config.py). Key options:
 | `output/messages_old.csv` | Old-export slice (post integration, pre-preprocess) |
 | `output/messages_new_only.csv` | New-export slice (post integration, pre-preprocess) |
 | `output/messages_combined.csv` | Full merged dataset (post integration, pre-preprocess) |
-| `output/liwc_scores.csv` | LIWC category scores per message |
+| `output/liwc_scores.csv` | Custom LIWC scorer: category scores per message |
+| `output/liwc22_scores.csv` | LIWC-22 CLI scores per message (optional) |
+| `output/liwc_validation_report.pdf` | Custom scorer vs LIWC-22 comparison report (optional) |
+| `output/liwc_validation_comparison.csv` | Per-category Pearson r and MAE table (optional) |
 | `output/full_report.pdf` | Consolidated report — all analysis sections in one PDF |
 | `output/full_report_old.pdf` | Same, old-data slice only |
 | `output/full_report_new_only.pdf` | Same, new-data slice only |

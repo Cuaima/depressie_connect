@@ -14,9 +14,11 @@ DATASET_FLAG  = $(if $(DATASET),--dataset $(DATASET),)
         postprocess postprocess-all \
         pipeline pipeline-all \
         eda cds liwc analyse analyse-all \
+        liwc22 liwc-validate liwc22-all liwc-validate-all \
         full-report full-report-all \
         master-report master-report-all \
         longitudinal longitudinal-all \
+        export export-all \
         app \
         test
 
@@ -55,7 +57,18 @@ help:
 	@echo "  make master-report-all  Master report for all three variants"
 	@echo "  make pipeline-all && make analyse-all && make longitudinal-all && make master-report-all"
 	@echo ""
+	@echo "LIWC-22 validation  (requires LIWC-22 app installed and licensed)"
+	@echo "  make liwc22             Run LIWC-22 CLI → liwc22_scores.csv"
+	@echo "  make liwc-validate      Run LIWC-22 CLI + produce validation report PDF"
+	@echo "  make liwc22-all         LIWC-22 scores for old, new_only, and combined"
+	@echo "  make liwc-validate-all  Full validation for old, new_only, and combined"
+	@echo "  Note: run 'make liwc' (custom scorer) before 'make liwc-validate'"
+	@echo ""
 	@echo "  Dataset flag:           make eda DATASET=old  (works for eda/cds/liwc/full-report/master-report)"
+	@echo ""
+	@echo "Export"
+	@echo "  make export             Export anonymized messages + topics to Excel (combined)"
+	@echo "  make export-all         Export all three dataset variants to Excel"
 	@echo ""
 	@echo "App"
 	@echo "  make app                Launch Streamlit dashboard"
@@ -132,6 +145,10 @@ analyse-all:
 	$(PY) src/liwc_analysis.py --dataset old
 	$(PY) src/liwc_analysis.py --dataset new_only
 	$(PY) src/liwc_analysis.py --dataset combined
+	@echo ""
+	@echo "NOTE: LIWC-22 validation was not run (requires licensed LIWC-22 app)."
+	@echo "      liwc_scores CSV files are now ready. To run LIWC-22 next:"
+	@echo "        make liwc-validate-all"
 
 full-report:
 	$(PY) src/full_report.py $(DATASET_FLAG)
@@ -152,6 +169,39 @@ longitudinal-all:
 	$(PY) src/user_longitudinal.py --dataset old
 	$(PY) src/user_longitudinal.py --dataset new_only
 	$(PY) src/user_longitudinal.py --dataset combined
+
+# ── LIWC-22 validation ────────────────────────────────────────────────────────
+# Requires LIWC-22 app installed and licensed.
+# Run 'make liwc' (custom scorer) before 'make liwc-validate' so liwc_scores.csv
+# exists for the comparison.
+
+liwc22:
+	$(PY) src/liwc22_cli_runner.py $(DATASET_FLAG)
+
+liwc-validate:
+	$(PY) src/liwc22_cli_runner.py $(DATASET_FLAG)
+	$(PY) src/liwc_validation_report.py $(DATASET_FLAG)
+
+liwc22-all:
+	$(PY) src/liwc22_cli_runner.py --dataset old
+	$(PY) src/liwc22_cli_runner.py --dataset new_only
+	$(PY) src/liwc22_cli_runner.py --dataset combined
+
+liwc-validate-all:
+	$(PY) src/liwc22_cli_runner.py --dataset old
+	$(PY) src/liwc_validation_report.py --dataset old
+	$(PY) src/liwc22_cli_runner.py --dataset new_only
+	$(PY) src/liwc_validation_report.py --dataset new_only
+	$(PY) src/liwc22_cli_runner.py --dataset combined
+	$(PY) src/liwc_validation_report.py --dataset combined
+
+# ── Excel export ─────────────────────────────────────────────────────────────
+
+export:
+	$(PY) scripts/export_to_excel.py $(DATASET_FLAG)
+
+export-all:
+	$(PY) scripts/export_to_excel.py --all
 
 # ── App ───────────────────────────────────────────────────────────────────────
 

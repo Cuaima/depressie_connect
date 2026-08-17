@@ -57,8 +57,8 @@ INTRO_GROUP_KEYWORDS = {
 }
 
 # ── Text quality filters ──────────────────────────────────────────────────────
-MIN_WORD_COUNT      = 1     # posts shorter than this are dropped
-MIN_POSTS_PER_USER  = 2     # users with fewer total posts than this are excluded
+MIN_WORD_COUNT      = 5     # posts shorter than this are dropped
+MIN_POSTS_PER_USER  = 5     # users with fewer total posts than this are excluded
 LANGUAGE_FILTER     = False   # drop non-English posts
 TARGET_LANGUAGE     = "nl"
 
