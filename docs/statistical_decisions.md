@@ -119,3 +119,36 @@ Al-Mosaiwi & Johnstone (2018) found that absolutist thinking — expressed throu
 
 **Note for future work:**  
 These distributions are right-skewed (a few very long posts, a few emoji-heavy users). If significance tests are added, do **not** use a t-test. Use Mann-Whitney U or bootstrap confidence intervals, for the same pseudo-replication reason as §2: aggregate to per-user rates before testing.
+
+---
+
+## 9. Pandemic-period comparison: per-user Kruskal-Wallis, not corpus log-likelihood
+
+**Where:** `pandemic_period_analysis.py`; period boundaries in `config.py` (`PANDEMIC_CUTOFF_DATE`, `PANDEMIC_END_DATE`)
+**What:** Psycholinguistic features (Yahya & Abdul Rahim 2023, §2.3: pronouns, function words, tenses, emotion, informal language, absolutist words) are compared across three pandemic periods.
+
+**Period definitions:**
+
+| Period | Boundary | Justification |
+|---|---|---|
+| `pre` | PostDate < 2020-03-11 | WHO pandemic declaration |
+| `during` | 2020-03-11 ≤ PostDate < 2022-03-23 | — |
+| `post` | PostDate ≥ 2022-03-23 | End of most Dutch COVID restrictions (chosen over the WHO emergency-end date 2023-05-05 because the forum population is Dutch; decision by the researcher, 2026-08-17) |
+
+**Deliberate departure from the source paper:**
+Yahya & Abdul Rahim compare pooled corpora with log-likelihood tests, which treats every token/message as independent — the same pseudo-replication problem as §2. We instead aggregate to per-user mean rates within each period, then test:
+
+1. **Omnibus:** Kruskal-Wallis across the three periods, per feature (epsilon-squared effect size).
+2. **Post-hoc:** pairwise Mann-Whitney U (pre/during, during/post, pre/post), only for features whose omnibus test survives BH correction (rank-biserial effect size, as §2).
+3. **Correction:** BH-FDR applied twice — first within the omnibus family to select features for post-hoc testing, then across the pooled set of all p-values (omnibus + post-hoc), which is what the reported `p_bh` column reflects.
+
+Groups with fewer than 5 users are excluded from testing (reported as skipped, never silently).
+
+**Confound — period × dataset variant:**
+The old export covers roughly 2019–2022 (pre + during), the new export roughly 2022 onward (essentially post). Period effects are therefore partially confounded with export source. The report's first diagnostic page is a `dataset_variant × pandemic_period` cross-tab (messages and unique users per cell) making this visible; near-empty cells are flagged. Interpret period contrasts on the `combined` variant with this confound in mind.
+
+**Independence limitation and sensitivity analysis:**
+Users who post in more than one period appear in more than one group, violating between-group independence (same class of issue as the §2 post/reply overlap). The report quantifies how many users appear in 1, 2, and 3 periods, and repeats the full analysis restricted to single-period users. Both result sets are written side by side (`analysis` column: `all_users` vs `single_period`) in `pandemic_period_stats.csv`. Divergence between the two indicates the multi-period users are driving results. A fully correct approach would be a mixed-effects model with user as a random effect; the sensitivity design was chosen for transparency and consistency with §2.
+
+**Dictionary availability:**
+Only categories actually present in the available dictionaries are analyzed (custom LIWC-2015 scorer output and/or LIWC-22 CLI output, labeled by source suffix `__liwc2015` / `__liwc22`). The report lists which Yahya categories are genuinely absent from each source — notably LIWC-22's `Analytic` summary variable, which is unavailable with an external Dutch dictionary (see §5 of the LIWC-22 validation report). Absolutist words come from `src/utils/absolutist.py` (§7).

@@ -51,6 +51,7 @@ SUB_REPORTS = [
     ("liwc_analysis.py",            "liwc_report.pdf",                   "5. LIWC Psycholinguistic Analysis"),
     ("user_longitudinal.py",        "user_longitudinal_report.pdf",      "6. Per-User Longitudinal Trends"),
     ("liwc_validation_report.py",   "liwc_validation_report.pdf",        "7. LIWC-22 Validation"),
+    ("pandemic_period_analysis.py", "pandemic_period_report.pdf",        "8. Pandemic-Period Comparison"),
 ]
 
 

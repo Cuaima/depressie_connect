@@ -15,6 +15,7 @@ DATASET_FLAG  = $(if $(DATASET),--dataset $(DATASET),)
         pipeline pipeline-all \
         eda cds liwc analyse analyse-all \
         liwc22 liwc-validate liwc22-all liwc-validate-all \
+        pandemic pandemic-all \
         full-report full-report-all \
         master-report master-report-all \
         longitudinal longitudinal-all \
@@ -63,6 +64,10 @@ help:
 	@echo "  make liwc22-all         LIWC-22 scores for old, new_only, and combined"
 	@echo "  make liwc-validate-all  Full validation for old, new_only, and combined"
 	@echo "  Note: run 'make liwc' (custom scorer) before 'make liwc-validate'"
+	@echo ""
+	@echo "Pandemic-period analysis  (needs liwc and/or liwc22 scores first)"
+	@echo "  make pandemic           Pre/during/post comparison → pandemic_period_report.pdf"
+	@echo "  make pandemic-all       Pandemic comparison for old, new_only, and combined"
 	@echo ""
 	@echo "  Dataset flag:           make eda DATASET=old  (works for eda/cds/liwc/full-report/master-report)"
 	@echo ""
@@ -194,6 +199,16 @@ liwc-validate-all:
 	$(PY) src/liwc_validation_report.py --dataset new_only
 	$(PY) src/liwc22_cli_runner.py --dataset combined
 	$(PY) src/liwc_validation_report.py --dataset combined
+
+# ── Pandemic-period analysis ─────────────────────────────────────────────────
+# Reads liwc_scores.csv and/or liwc22_scores.csv — run 'make liwc' (and
+# optionally 'make liwc22') first.
+
+pandemic:
+	$(PY) src/pandemic_period_analysis.py $(DATASET_FLAG)
+
+pandemic-all:
+	$(PY) src/pandemic_period_analysis.py --all
 
 # ── Excel export ─────────────────────────────────────────────────────────────
 

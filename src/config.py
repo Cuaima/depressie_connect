@@ -67,6 +67,17 @@ ANONYMIZE_TEXT        = True
 REPLACE_ORIGINAL_TEXT = True
 EXPORT_ENTITY_REVIEW  = True
 
+# ── Pandemic period analysis ─────────────────────────────────────────────────
+# Three periods from PostDate:
+#   pre    : date <  PANDEMIC_CUTOFF_DATE
+#   during : PANDEMIC_CUTOFF_DATE <= date < PANDEMIC_END_DATE
+#   post   : date >= PANDEMIC_END_DATE
+PANDEMIC_CUTOFF_DATE = "2020-03-11"   # WHO pandemic declaration
+PANDEMIC_END_DATE    = "2022-03-23"   # end of most Dutch COVID restrictions
+                                      # (confirmed by Claudia, 2026-08-17;
+                                      #  alternative considered: 2023-05-05,
+                                      #  WHO end of global health emergency)
+
 # ── Three-dataset split (output of integrate_datasets.py) ────────────────────
 INTEGRATED_OLD_PATH      = "output/messages_old.csv"
 INTEGRATED_NEW_PATH      = "output/messages_new_only.csv"

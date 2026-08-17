@@ -119,6 +119,10 @@ Run scripts in this order. Steps 1–3 must each be run once per dataset when wo
    liwc_validation_report.py  →  compare custom scorer vs LIWC-22 → liwc_validation_report.pdf
         ↓  must run liwc_analysis.py first so liwc_scores.csv exists
 
+5c. pandemic_period_analysis.py →  pre/during/post pandemic comparison
+        ↓  reads liwc_scores.csv and/or liwc22_scores.csv (run 5 and/or 5b first);
+           period boundaries in config.py (PANDEMIC_CUTOFF_DATE / PANDEMIC_END_DATE)
+
 6. Choose one consolidated PDF approach:
 
    A. full_report.py          →  loads data ONCE, scores CDS + LIWC once, writes all
@@ -222,6 +226,7 @@ All analysis scripts read from `output/messages_structured.csv` (the postprocess
 | `user_longitudinal.py` | `messages_structured.csv` | `user_longitudinal_report.pdf` |
 | `liwc22_cli_runner.py` *(optional)* | `messages_structured.csv` | `liwc22_scores.csv` |
 | `liwc_validation_report.py` *(optional)* | `liwc_scores.csv` + `liwc22_scores.csv` | `liwc_validation_report.pdf`, `liwc_validation_comparison.csv` |
+| `pandemic_period_analysis.py` | `liwc_scores.csv` and/or `liwc22_scores.csv` | `pandemic_period_report.pdf`, `pandemic_period_stats.csv` |
 
 The EDA report (`exploration.py`) includes a **Role-Based Analysis** section at the end of each PDF:
 
@@ -379,6 +384,19 @@ The validation report includes:
 make pipeline DATASET=combined
 make liwc DATASET=combined
 make liwc-validate DATASET=combined
+```
+
+### Pandemic-period comparison
+
+Compares psycholinguistic markers (pronouns, function words, tenses, emotion, informal language, absolutist words — after Yahya & Abdul Rahim 2023) across three pandemic periods (`pre` / `during` / `post`, boundaries in `config.py`). Uses per-user Kruskal-Wallis + pairwise Mann-Whitney U with BH correction instead of the paper's corpus-level log-likelihood — see `docs/statistical_decisions.md` §9, including the period × dataset-variant confound and the single-period-user sensitivity analysis.
+
+Requires `liwc_scores.csv` (from `make liwc`) and/or `liwc22_scores.csv` (from `make liwc22`).
+
+```bash
+make pandemic                 # combined
+make pandemic DATASET=old
+make pandemic-all             # all three variants
+python src/pandemic_period_analysis.py --end-date 2023-05-05   # provisional experiment
 ```
 
 Any analysis target accepts a `DATASET=` override:
