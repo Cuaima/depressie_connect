@@ -26,6 +26,7 @@ import matplotlib.backends.backend_pdf as pdf_backend
 
 from dataset_io import add_dataset_arg, structured_path, variant_path, subtitle_for
 from role_analysis import add_role_section_to_pdf
+from utils.thread_utils import strip_entity_placeholders_col
 
 warnings.filterwarnings("ignore")
 
@@ -48,6 +49,7 @@ def load_data(input_path: str) -> pd.DataFrame:
     df = pd.read_csv(input_path)
     df[DATE_COL] = pd.to_datetime(df[DATE_COL], errors="coerce")
     df = df.dropna(subset=[DATE_COL])
+    df = strip_entity_placeholders_col(df, TEXT_COL)
     print(f"Loaded {len(df)} messages from {df[POSTER_COL].nunique()} posters.")
     return df
 

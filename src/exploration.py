@@ -20,7 +20,7 @@ import matplotlib.backends.backend_pdf as pdf_backend
 from collections import Counter
 import emoji as emoji_lib
 
-from utils.thread_utils import label_roles
+from utils.thread_utils import label_roles, strip_entity_placeholders_col
 from dataset_io import add_dataset_arg, structured_path, variant_path
 
 warnings.filterwarnings("ignore")
@@ -39,6 +39,7 @@ def load_messages(path: str = "output/messages_structured.csv") -> pd.DataFrame:
     df = pd.read_csv(path)
     df[DATE_COL] = pd.to_datetime(df[DATE_COL], errors="coerce")
     df = df.dropna(subset=[DATE_COL])
+    df = strip_entity_placeholders_col(df, TEXT_COL)
     return df
 
 
@@ -1066,9 +1067,7 @@ def generate_report(path: str | None = None, dataset: str | None = None):
     filt_path = variant_path(_OUTPUT_DIR, "messages_multi_posters.csv",  ds)
 
     print("\n=== Report 1: All users ===")
-    df = pd.read_csv(path)
-    df[DATE_COL] = pd.to_datetime(df[DATE_COL], errors="coerce")
-    df = df.dropna(subset=[DATE_COL])
+    df = load_messages(path)
     print(f"Loaded {len(df)} messages from {df[POSTER_COL].nunique()} posters.")
 
     stats = compute_stats(df)

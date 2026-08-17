@@ -24,7 +24,7 @@ import subprocess
 import tempfile
 import pandas as pd
 
-from utils.thread_utils import label_roles
+from utils.thread_utils import label_roles, strip_entity_placeholders_col
 from dataset_io import add_dataset_arg, structured_path, variant_path
 
 # ── Configuration ─────────────────────────────────────────────────────────────
@@ -64,6 +64,7 @@ def load_messages(path: str) -> pd.DataFrame:
     df = pd.read_csv(path)
     df[DATE_COL] = pd.to_datetime(df[DATE_COL], errors="coerce")
     df = df.dropna(subset=[DATE_COL, TEXT_COL]).reset_index(drop=True)
+    df = strip_entity_placeholders_col(df, TEXT_COL)
     print(f"  {len(df)} messages from {df[POSTER_COL].nunique()} users.")
     return df
 

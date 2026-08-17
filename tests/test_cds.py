@@ -175,6 +175,40 @@ class TestLabelRoles:
 
 
 # ---------------------------------------------------------------------------
+# strip_entity_placeholders  (utils/thread_utils.py)
+# ---------------------------------------------------------------------------
+
+from utils.thread_utils import strip_entity_placeholders, strip_entity_placeholders_col
+
+
+class TestStripEntityPlaceholders:
+    def test_removes_simple_placeholder(self):
+        assert strip_entity_placeholders("hoi [ENTITY_PERSON_1] hoe gaat het") == \
+            "hoi hoe gaat het"
+
+    def test_removes_multiword_entity_type(self):
+        # 'of' inside WORK_OF_ART must not leak into the text as a Dutch word
+        result = strip_entity_placeholders("ik las [ENTITY_WORK_OF_ART_3]")
+        assert result == "ik las"
+        assert "of" not in result.split()
+
+    def test_case_insensitive(self):
+        assert strip_entity_placeholders("[entity_person_1]") == ""
+
+    def test_plain_text_unchanged(self):
+        assert strip_entity_placeholders("gewone tekst zonder entiteiten") == \
+            "gewone tekst zonder entiteiten"
+
+    def test_bracketed_non_placeholder_kept(self):
+        assert strip_entity_placeholders("[quote] blijft staan") == "[quote] blijft staan"
+
+    def test_col_helper_handles_nan(self):
+        df = pd.DataFrame({"MessageText": ["[ENTITY_GPE_1] daar", None]})
+        result = strip_entity_placeholders_col(df, "MessageText")
+        assert result["MessageText"].tolist() == ["daar", ""]
+
+
+# ---------------------------------------------------------------------------
 # add_time_columns  (cds_prevalence.py)
 # ---------------------------------------------------------------------------
 
@@ -206,8 +240,10 @@ class TestAddTimeColumns:
 
 class TestComputeCategoryRanking:
     def _make_df(self):
-        """DataFrame with two CDS category columns and a role column."""
+        """DataFrame with two CDS category columns, role, and per-user IDs
+        (required since the switch to per-user Mann-Whitney U)."""
         return pd.DataFrame({
+            "PosterID": ["u1", "u2", "u3", "u4", "u5"],
             "role": ["post", "reply", "post", "reply", "post"],
             "Catastrophizing": [1, 0, 1, 1, 0],
             "Mindreading":     [0, 1, 0, 0, 1],

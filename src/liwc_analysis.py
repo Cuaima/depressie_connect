@@ -37,7 +37,7 @@ import matplotlib.backends.backend_pdf as pdf_backend
 from collections import defaultdict
 
 from tqdm import tqdm
-from utils.thread_utils import label_roles
+from utils.thread_utils import label_roles, strip_entity_placeholders_col
 from utils.absolutist import absolutist_rate as _absolutist_rate
 from utils.spinner import Spinner
 from dataset_io import add_dataset_arg, structured_path, variant_path
@@ -529,6 +529,7 @@ def main(dataset: str | None = None):
     df = pd.read_csv(input_path)
     df[DATE_COL] = pd.to_datetime(df[DATE_COL], errors="coerce")
     df = df.dropna(subset=[DATE_COL, TEXT_COL]).copy()
+    df = strip_entity_placeholders_col(df, TEXT_COL)
     print(f"  {len(df)} messages from {df[POSTER_COL].nunique()} users.")
 
     df = label_roles(df)

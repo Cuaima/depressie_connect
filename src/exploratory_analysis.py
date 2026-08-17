@@ -37,7 +37,7 @@ import matplotlib.backends.backend_pdf as pdf_backend
 from scipy import stats
 
 from utils.CDS import process_dataset
-from utils.thread_utils import label_roles
+from utils.thread_utils import label_roles, strip_entity_placeholders_col
 from dataset_io import add_dataset_arg, structured_path, variant_path, subtitle_for
 
 warnings.filterwarnings("ignore")
@@ -76,6 +76,7 @@ def load_data(path: str | None = None) -> pd.DataFrame:
     df = pd.read_csv(path or INPUT_PATH)
     df[DATE_COL] = pd.to_datetime(df[DATE_COL], errors="coerce")
     df = df.dropna(subset=[DATE_COL, TEXT_COL]).copy()
+    df = strip_entity_placeholders_col(df, TEXT_COL)
     print(f"  Loaded {len(df)} messages from {df[POSTER_COL].nunique()} users.")
     return df
 

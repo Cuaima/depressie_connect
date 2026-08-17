@@ -179,6 +179,17 @@ class TestNormalizeDutchText:
         result = postprocess._normalize_dutch_text("line1\n\n\n\nline2")
         assert "\n\n\n" not in result
 
+    def test_strips_entity_placeholders(self):
+        result = postprocess._normalize_dutch_text(
+            "ik las [ENTITY_WORK_OF_ART_1] van [ENTITY_PERSON_2] gisteren"
+        )
+        assert "entity" not in result
+        assert result == "ik las van gisteren"
+
+    def test_entity_placeholder_multiword_type(self):
+        result = postprocess._normalize_dutch_text("[ENTITY_WORK_OF_ART_12]")
+        assert result == ""
+
 
 # ---------------------------------------------------------------------------
 # normalize_text

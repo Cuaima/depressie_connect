@@ -29,7 +29,7 @@ import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf as pdf_backend
 import pandas as pd
 
-from utils.thread_utils import label_roles
+from utils.thread_utils import label_roles, strip_entity_placeholders_col
 from utils.CDS import process_dataset
 from utils.absolutist import absolutist_rate as _absolutist_rate
 
@@ -97,6 +97,7 @@ def load_and_score(dataset: str | None) -> dict:
     df = pd.read_csv(input_path)
     df[DATE_COL] = pd.to_datetime(df[DATE_COL], errors="coerce")
     df = df.dropna(subset=[DATE_COL, TEXT_COL]).copy()
+    df = strip_entity_placeholders_col(df, TEXT_COL)
     print(f"  {len(df)} messages from {df[POSTER_COL].nunique()} users.")
 
     df = label_roles(df)

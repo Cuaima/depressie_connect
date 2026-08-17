@@ -173,6 +173,7 @@ def _normalize_dutch_text(text: str) -> str:
     and pathological character repetition.
     """
     text = str(text).lower()
+    text = re.sub(r"\[entity_[a-z_]+_\d+\]", " ", text)  # drop anonymization placeholders
     text = re.sub(r"(.)\1{3,}", r"\1\1", text)   # 4+ repeated chars → 2
     text = re.sub(r"[ \t]+", " ", text)           # collapse horizontal whitespace
     text = re.sub(r"\n{3,}", "\n\n", text)        # max two consecutive newlines

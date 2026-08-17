@@ -26,6 +26,29 @@ def label_roles(
     return df
 
 
+# ── Anonymization placeholder stripping ──────────────────────────────────────
+
+# NER anonymization (preprocess.py) replaces entities with placeholders like
+# [ENTITY_PERSON_1] or [ENTITY_WORK_OF_ART_2]. These must stay in the stored
+# text (they ARE the anonymization) but must never reach analysis: tokenizers
+# split them into words like "of", "work", "art" that pollute LIWC function-
+# word and content scores, word frequencies, and word counts.
+_ENTITY_PLACEHOLDER_RE = re.compile(r"\[entity_[a-z_]+_\d+\]", re.IGNORECASE)
+
+
+def strip_entity_placeholders(text: str) -> str:
+    """Remove [ENTITY_*_N] anonymization placeholders; collapse leftover spaces."""
+    text = _ENTITY_PLACEHOLDER_RE.sub(" ", str(text))
+    return re.sub(r" {2,}", " ", text).strip()
+
+
+def strip_entity_placeholders_col(df: pd.DataFrame, column: str) -> pd.DataFrame:
+    """Apply strip_entity_placeholders to one text column of a DataFrame."""
+    df = df.copy()
+    df[column] = df[column].fillna("").map(strip_entity_placeholders)
+    return df
+
+
 # ── Word-level helpers ────────────────────────────────────────────────────────
 
 _WORD_RE = re.compile(r"[^\W\d_]+", re.UNICODE)  # letters only, no digits/underscore
