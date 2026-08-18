@@ -27,10 +27,15 @@ pandemic report makes the overlap visible.
 **Group overlap in rank tests.** Users who both post and reply appear in both
 role groups, and users active in several pandemic periods appear in several
 period groups. The groups are therefore not fully independent. The
-single-period sensitivity analysis quantifies the consequence: the sadness
-decline seen in the full pandemic analysis disappears when multi-period users
-are removed, and should be read accordingly. A mixed-effects model with user
-as a random effect would resolve this properly and is left as future work.
+single-period sensitivity analysis addresses this by repeating the pandemic
+comparison on users active in only one period. In this data the all-users
+omnibus test finds no significant period difference in either the primary or
+the combined variant, while the single-period subset surfaces only netspeak in
+the primary variant and pronoun categories and netspeak in the combined
+variant. Those single-period results rest on a smaller sample and, for the
+combined variant, on the export-source confound, so they are read as tentative
+rather than as findings. A mixed-effects model with user as a random effect
+would handle the non-independence directly and is left as future work.
 
 **Translated lexicons.** The Dutch absolutist word list is a translation of the
 19-word English set from Al-Mosaiwi and Johnstone (2018) and has not yet been
