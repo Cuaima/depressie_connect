@@ -56,6 +56,7 @@ from dataset_io import (
 )
 from utils.spinner import Spinner
 from utils.absolutist import absolutist_rate
+from utils.thread_utils import parse_post_dates
 import liwc_analysis
 from liwc22_cli_runner import LIWC22_STRUCTURAL_COLS, LIWC22_SUMMARY_VARS
 
@@ -134,7 +135,7 @@ def assign_period(dates: pd.Series, cutoff: str, end: str) -> pd.Series:
 
 def _load_dated_csv(path: str, usecols=None) -> pd.DataFrame:
     df = pd.read_csv(path, usecols=usecols, low_memory=False)
-    df[DATE_COL] = pd.to_datetime(df[DATE_COL], errors="coerce")
+    df[DATE_COL] = parse_post_dates(df[DATE_COL])
     return df.dropna(subset=[DATE_COL])
 
 

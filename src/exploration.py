@@ -20,7 +20,7 @@ import matplotlib.backends.backend_pdf as pdf_backend
 from collections import Counter
 import emoji as emoji_lib
 
-from utils.thread_utils import label_roles, strip_entity_placeholders_col
+from utils.thread_utils import label_roles, strip_entity_placeholders_col, parse_post_dates
 from dataset_io import add_dataset_arg, structured_path, variant_path
 
 warnings.filterwarnings("ignore")
@@ -37,7 +37,7 @@ TOPIC_COL   = "ForumTopicID"
 
 def load_messages(path: str = "output/messages_structured.csv") -> pd.DataFrame:
     df = pd.read_csv(path)
-    df[DATE_COL] = pd.to_datetime(df[DATE_COL], errors="coerce")
+    df[DATE_COL] = parse_post_dates(df[DATE_COL])
     df = df.dropna(subset=[DATE_COL])
     df = strip_entity_placeholders_col(df, TEXT_COL)
     return df
@@ -1082,7 +1082,7 @@ def generate_report(path: str | None = None, dataset: str | None = None):
 
     print("\n=== Report 2: Multi-posters only ===")
     df_multi = filtered.copy()
-    df_multi[DATE_COL] = pd.to_datetime(df_multi[DATE_COL], errors="coerce")
+    df_multi[DATE_COL] = parse_post_dates(df_multi[DATE_COL])
     df_multi = df_multi.dropna(subset=[DATE_COL])
     print(f"Loaded {len(df_multi)} messages from {df_multi[POSTER_COL].nunique()} posters.")
     stats_multi = compute_stats(df_multi)

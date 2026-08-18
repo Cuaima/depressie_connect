@@ -33,6 +33,7 @@ from liwc22_cli_runner import (
 )
 from liwc_analysis import PRIMARY, C_POST, C_REPLY, _style_ax, _cover_page, _section_divider
 from utils.spinner import Spinner
+from utils.thread_utils import parse_post_dates
 
 OUTPUT_DIR = "output"
 
@@ -47,7 +48,7 @@ _NON_CATEGORY_COLS = LIWC22_STRUCTURAL_COLS | {
 
 def load_data(path: str) -> pd.DataFrame:
     df = pd.read_csv(path)
-    df[DATE_COL] = pd.to_datetime(df[DATE_COL], errors="coerce")
+    df[DATE_COL] = parse_post_dates(df[DATE_COL])
     df = df.dropna(subset=[DATE_COL])
     df["month_dt"] = df[DATE_COL].dt.to_period("M").dt.to_timestamp()
     return df

@@ -209,6 +209,39 @@ class TestStripEntityPlaceholders:
 
 
 # ---------------------------------------------------------------------------
+# parse_post_dates  (utils/thread_utils.py)
+# ---------------------------------------------------------------------------
+
+from utils.thread_utils import parse_post_dates
+
+
+class TestParsePostDates:
+    def test_mixed_precision_formats_all_parse(self):
+        """The combined export mixes millisecond ('.867'), '.000', and bare
+        second-precision timestamps. All must parse — a strict format inferred
+        from the first row silently NaT'd the minority format (the combined
+        LIWC date-loss bug)."""
+        s = pd.Series([
+            "2019-06-19 00:26:49.867",   # old export, milliseconds
+            "2019-09-02 11:40:52.000",   # new export, .000
+            "2022-12-04 13:10:02",       # new export, seconds
+        ])
+        out = parse_post_dates(s)
+        assert out.notna().all()
+        assert out.iloc[2].year == 2022 and out.iloc[2].hour == 13
+
+    def test_ms_first_then_seconds_does_not_drop_seconds(self):
+        # Direct regression: ms value first, second-precision after.
+        out = parse_post_dates(pd.Series(["2019-06-19 00:26:49.867",
+                                          "2022-12-04 13:10:02"]))
+        assert out.notna().all()
+
+    def test_empty_and_bad_values_become_nat(self):
+        out = parse_post_dates(pd.Series(["", "not a date", "2020-01-01 00:00:00"]))
+        assert out.isna().tolist() == [True, True, False]
+
+
+# ---------------------------------------------------------------------------
 # add_time_columns  (cds_prevalence.py)
 # ---------------------------------------------------------------------------
 

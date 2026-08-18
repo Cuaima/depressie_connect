@@ -24,6 +24,7 @@ import re
 import pandas as pd
 
 from config import PREPROCESS_DIR, OUTPUT_DIR, INTRO_GROUP_KEYWORDS, MIN_POSTS_PER_USER
+from utils.thread_utils import parse_post_dates
 
 # ── Config ────────────────────────────────────────────────────────────────────
 TEXT_COLUMN = "MessageText"
@@ -59,7 +60,7 @@ def load_cleaned_data(dataset: str | None = None) -> pd.DataFrame:
     print(f"  Loaded {len(df)} messages, {df['ForumTopicID'].nunique()} threads.")
 
     if DATE_COLUMN in df.columns:
-        df[DATE_COLUMN] = pd.to_datetime(df[DATE_COLUMN], errors="coerce")
+        df[DATE_COLUMN] = parse_post_dates(df[DATE_COLUMN])
 
     return df
 

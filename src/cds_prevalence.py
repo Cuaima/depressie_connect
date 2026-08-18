@@ -26,7 +26,7 @@ from scipy import stats as scipy_stats
 from statsmodels.stats.multitest import multipletests
 
 from utils.CDS import process_dataset, load_CDS
-from utils.thread_utils import label_roles, strip_entity_placeholders_col
+from utils.thread_utils import label_roles, strip_entity_placeholders_col, parse_post_dates
 from utils.spinner import Spinner
 from dataset_io import add_dataset_arg, structured_path, variant_path
 
@@ -68,7 +68,7 @@ CDS_CATEGORY_COLS = [
 
 def load_messages(path: str | None = None) -> pd.DataFrame:
     df = pd.read_csv(path or INPUT_PATH)
-    df[DATE_COL] = pd.to_datetime(df[DATE_COL], errors="coerce")
+    df[DATE_COL] = parse_post_dates(df[DATE_COL])
     df = df.dropna(subset=[DATE_COL, TEXT_COL]).copy()
     df = strip_entity_placeholders_col(df, TEXT_COL)
     print(f"  Loaded {len(df)} messages from {df[POSTER_COL].nunique()} users.")
@@ -93,7 +93,7 @@ def get_scored_df(input_path: str | None = None,
     if os.path.exists(scored_path):
         print(f"  Loading pre-scored data from {scored_path}")
         df = pd.read_csv(scored_path)
-        df[DATE_COL] = pd.to_datetime(df[DATE_COL], errors="coerce")
+        df[DATE_COL] = parse_post_dates(df[DATE_COL])
     else:
         print("  cds_scores.csv not found — running CDS scoring from scratch…")
         df = load_messages(input_path)

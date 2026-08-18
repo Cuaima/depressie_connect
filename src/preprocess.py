@@ -35,6 +35,7 @@ from config import (
     ANONYMIZE_TEXT, REPLACE_ORIGINAL_TEXT, EXPORT_ENTITY_REVIEW,
     INTEGRATED_OLD_PATH, INTEGRATED_NEW_PATH, INTEGRATED_COMBINED_PATH,
 )
+from utils.thread_utils import parse_post_dates
 
 _ANON_AVAILABLE = False
 _LANGDETECT_AVAILABLE = False
@@ -236,7 +237,21 @@ def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
     for col in DATE_COLUMNS:
         if col in df.columns:
-            df[col] = pd.to_datetime(df[col], errors="coerce")
+            # astype(str) above turned real NaN into the string "nan"/"<NA>";
+            # those never were dates, so exclude them from the loss check.
+            raw = df[col].astype(str)
+            had_value = ~raw.str.lower().isin({"nan", "nat", "<na>", "none", ""})
+            df[col] = parse_post_dates(df[col])
+            lost = int((had_value & df[col].isna()).sum())
+            if lost:
+                frac = lost / max(int(had_value.sum()), 1)
+                if frac > 0.005:
+                    raise RuntimeError(
+                        f"{lost} non-empty '{col}' values ({frac:.1%}) failed to parse — "
+                        "a systemic date-format problem, not stray dirty rows. "
+                        "Refusing to continue and silently drop them."
+                    )
+                print(f"  WARNING: {lost} non-empty '{col}' values failed to parse (kept as NaT).")
 
     return df
 

@@ -33,6 +33,7 @@ import pandas as pd
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from dataset_io import add_dataset_arg, structured_path, variant_path, DATASET_CHOICES
+from utils.thread_utils import parse_post_dates
 
 OUTPUT_DIR = "output"
 EXPORT_DIR = os.path.join(OUTPUT_DIR, "export")
@@ -104,7 +105,7 @@ def export_dataset(dataset: str) -> str:
 
     print(f"\nLoading {input_path}…")
     df = pd.read_csv(input_path)
-    df[DATE_COL] = pd.to_datetime(df[DATE_COL], errors="coerce")
+    df[DATE_COL] = parse_post_dates(df[DATE_COL])
     print(f"  {len(df):,} messages  ·  "
           f"{df[POSTER_COL].nunique():,} users  ·  "
           f"{df[TOPIC_COL].nunique():,} threads")

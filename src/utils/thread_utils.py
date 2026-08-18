@@ -26,6 +26,22 @@ def label_roles(
     return df
 
 
+# ── Date parsing ──────────────────────────────────────────────────────────────
+
+def parse_post_dates(series: pd.Series) -> pd.Series:
+    """
+    Parse PostDate-style columns tolerantly across the two export formats.
+
+    The old export carries millisecond timestamps ('...:49.867'); the new
+    export mixes '.000' and second-precision values. Bare pd.to_datetime
+    infers a strict format from the FIRST element (pandas >= 2.0), so on a
+    mixed column it silently coerces the minority format to NaT — in the
+    combined variant this destroyed the dates of ~21k new-export rows.
+    format='ISO8601' parses all shapes uniformly.
+    """
+    return pd.to_datetime(series, format="ISO8601", errors="coerce")
+
+
 # ── Anonymization placeholder stripping ──────────────────────────────────────
 
 # NER anonymization (preprocess.py) replaces entities with placeholders like

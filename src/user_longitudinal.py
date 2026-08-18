@@ -16,7 +16,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf as pdf_backend
 
-from utils.thread_utils import label_roles, strip_entity_placeholders_col
+from utils.thread_utils import label_roles, strip_entity_placeholders_col, parse_post_dates
 from liwc_analysis import load_liwc, score_messages, ensure_fps
 from dataset_io import add_dataset_arg, structured_path, variant_path
 
@@ -37,7 +37,7 @@ PALETTE   = ["#2E5E8E", "#E8A838", "#5A9E6F", "#C0392B", "#8E44AD"]
 
 def load_data(path: str) -> pd.DataFrame:
     df = pd.read_csv(path)
-    df[DATE_COL] = pd.to_datetime(df[DATE_COL], errors="coerce")
+    df[DATE_COL] = parse_post_dates(df[DATE_COL])
     df = df.dropna(subset=[DATE_COL])
     return strip_entity_placeholders_col(df, TEXT_COL)
 
