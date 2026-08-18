@@ -354,6 +354,35 @@ def _section_divider(title):
     return fig
 
 
+def fig_fps_by_role(df: pd.DataFrame) -> plt.Figure | None:
+    """Bar chart: mean first-person-singular rate by role (posts vs replies).
+
+    FPS is a replicated marker of depressive self-focus (Smirnova 2018;
+    Eichstaedt et al. 2018), so it gets its own figure rather than sitting
+    anonymously among the other LIWC categories. Uses the LIWC 'i' category if
+    present, else the Dutch fallback 'fps_dutch' (see ensure_fps)."""
+    fps_col = next((c for c in ("liwc_i_pct", "liwc_fps_dutch_pct")
+                    if c in df.columns), None)
+    if fps_col is None:
+        return None
+    posts   = df[df["role"] == "post"][fps_col].mean()
+    replies = df[df["role"] == "reply"][fps_col].mean()
+
+    fig, ax = plt.subplots(figsize=(6, 4))
+    ax.bar(["Opening posts", "Replies"], [posts, replies],
+           color=[C_POST, C_REPLY], alpha=0.85, edgecolor="white")
+    for i, v in enumerate([posts, replies]):
+        ax.text(i, v + 0.02, f"{v:.2f}%", ha="center", fontsize=9, color="#333333")
+    _style_ax(
+        ax,
+        "First-Person Singular Rate by Role\n"
+        "(self-focus marker; Smirnova 2018, Eichstaedt et al. 2018)",
+        "Role", "Mean first-person singular (% of words)",
+    )
+    fig.tight_layout()
+    return fig
+
+
 def fig_absolutist_by_role(df: pd.DataFrame) -> plt.Figure:
     """Bar chart: mean absolutist word rate by role (posts vs replies)."""
     posts   = df[df["role"] == "post"]["absolutist_rate"].mean()
@@ -505,8 +534,13 @@ def build_pdf(df: pd.DataFrame, liwc_cols: list[str],
         save(_section_divider("Section 3 — Top Categories Over Time"))
         save(fig_category_over_time(df, liwc_cols))
 
+        fps_fig = fig_fps_by_role(df)
+        if fps_fig is not None:
+            save(_section_divider("Section 4 — First-Person Singular by Role"))
+            save(fps_fig)
+
         if "absolutist_rate" in df.columns:
-            save(_section_divider("Section 4 — Absolutist Words"))
+            save(_section_divider("Section 5 — Absolutist Words"))
             save(fig_absolutist_by_role(df))
 
     if pdf is not None:
