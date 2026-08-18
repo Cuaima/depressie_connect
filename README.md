@@ -2,6 +2,49 @@
 
 Research pipeline for processing and analysing Dutch depression forum data. The pipeline cleans raw forum exports, pseudonymizes user identifiers and masks entities in message text using NER, structures threads, and extracts psycholinguistic features (LIWC) for downstream classification tasks. The data are pseudonymized, not anonymized (see [docs/DATA_GOVERNANCE.md](docs/DATA_GOVERNANCE.md)).
 
+## Getting started (no programming experience needed)
+
+This section takes you from a fresh copy of the project to a finished PDF report with a handful of typed commands. You do not need to understand the code.
+
+You will type commands into the **Terminal**. On a Mac, open the app called *Terminal* (press `Cmd+Space`, type "Terminal", press Enter). Type each command below on its own line and press Enter after it. A `make` command is just a shortcut that runs one of the project's steps for you.
+
+First, move into the project folder so the commands know where to run (adjust the path if your copy lives somewhere else):
+
+```bash
+cd ~/Documents/RA/depression_connect_project
+```
+
+Then follow these steps in order:
+
+1. **Install everything the project needs.** This builds a private Python environment and downloads the Dutch language model. Run it once.
+   ```bash
+   make install
+   .venv/bin/python -m spacy download nl_core_news_lg
+   ```
+2. **Add the data.** Put the forum CSV files into the `data/` folder (the exact filenames are listed under [Data files](#data-files) further down). The pipeline cannot run without them, and they are private, so they are not included in the project.
+3. **Clean and structure the data.**
+   ```bash
+   make pipeline
+   ```
+4. **Run the analyses** (descriptive statistics, cognitive distortions, LIWC features, per-user trends).
+   ```bash
+   make analyse
+   make longitudinal
+   ```
+5. **Assemble the report.** This merges the analysis outputs into one PDF.
+   ```bash
+   make master-report
+   ```
+
+Your finished files appear in the `output/` folder. The main one is `output/master_report.pdf`.
+
+Two helpful extras:
+
+- `make help` lists every available command with a one-line description.
+- `make app` opens an interactive dashboard in your web browser.
+
+The commands above process the default (combined) dataset. To produce all three dataset variants at once, add `-all` to each step (`make pipeline-all`, `make analyse-all`, `make longitudinal-all`, `make master-report-all`). If a command stops with an error, the [Setup](#setup) section further down covers requirements and troubleshooting.
+
 ## Project structure
 
 ```
