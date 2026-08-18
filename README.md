@@ -225,6 +225,7 @@ All analysis scripts read from `output/messages_structured.csv` (the postprocess
 | `liwc_analysis.py` | `messages_structured.csv` | `liwc_report.pdf`, `liwc_scores.csv`, `liwc_per_user.csv` |
 | `user_longitudinal.py` | `messages_structured.csv` | `user_longitudinal_report.pdf` |
 | `liwc22_cli_runner.py` *(optional)* | `messages_structured.csv` | `liwc22_scores.csv` |
+| `liwc22_report.py` *(optional)* | `liwc22_scores.csv` | `liwc22_report.pdf` — descriptive report on LIWC-22's own scores (mirrors `liwc_report.pdf`) |
 | `liwc_validation_report.py` *(optional)* | `liwc_scores.csv` + `liwc22_scores.csv` | `liwc_validation_report.pdf`, `liwc_validation_comparison.csv` |
 | `pandemic_period_analysis.py` | `liwc_scores.csv` and/or `liwc22_scores.csv` | `pandemic_period_report.pdf`, `pandemic_period_stats.csv` |
 
@@ -370,7 +371,13 @@ make liwc22               # run LIWC-22 CLI → liwc22_scores.csv
 make liwc-validate        # run CLI + produce validation report PDF
 make liwc22-all           # LIWC-22 scores for old, new_only, and combined
 make liwc-validate-all    # full validation for all three dataset variants
+make liwc22-report        # standalone descriptive report on LIWC-22's own scores
+make liwc22-report-all    # LIWC-22 report for old, new_only, and combined
 ```
+
+`liwc22_report.py` mirrors `liwc_report.pdf`'s structure (category prevalence,
+posts vs replies, monthly trends) but reports LIWC-22's own numbers directly —
+it does not compare against the custom scorer (that's `liwc-validate`).
 
 The validation report includes:
 1. Per-category Pearson r and MAE (mean absolute difference in percentage points) between scorers
