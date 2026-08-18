@@ -116,5 +116,9 @@ docker-compose.*.yml
 *.sublime-project
 
 # Claude Code
-.claude/
+# Commit the shared project settings (settings.json carries the deny rules
+# that block reading data/ and output/ — a safety default for this repo).
+# Keep personal/local overrides out of version control.
+.claude/settings.local.json
+.claude/*.local.json
 docs/studies/*.pdf
