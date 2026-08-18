@@ -39,7 +39,7 @@ scripts (regenerated 2026-08-18 on the final config):
 |---|---:|---:|---:|---|
 | `old` | 18,550 | 427 | 2,024 | 2019-06-19 – 2022-10-05 |
 | `new_only` | 25,504 | 530 | 3,388 | 2019-05-17 – 2026-03-30 |
-| `combined` (default) | 45,181 | 940 | 5,495 | 2019-06-19 – 2026-03-29 |
+| `combined` (default) | 45,181 | 940 | 5,495 | 2019-05-17 – 2026-03-30 |
 
 - **What does each instance represent?** One forum message (a post or a reply),
   with its pseudonymous author ID, thread ID, group ID, timestamp, and text.
