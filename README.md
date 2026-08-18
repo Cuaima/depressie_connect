@@ -47,21 +47,24 @@ depression_connect_project/
 │   ├── diagnose_new_data.py       # Pre-integration diagnostic (read-only)
 │   ├── analysis.py
 │   ├── eda_report.py              # Legacy EDA report (superseded by exploration.py)
-│   ├── custom_text_anonymizer/    # NER-based text anonymizer (Dutch spaCy)
+│   ├── custom_text_anonymizer/    # NER-based text pseudonymizer/masker (Dutch spaCy)
 │   │   ├── core.py
 │   │   └── main.py
 │   ├── postvscomment/             # Experimental post-vs-reply classifier
 │   │   └── postvscomment.py
 │   ├── liwc22_cli_runner.py       # LIWC-22 CLI wrapper → liwc22_scores.csv
+│   ├── liwc22_report.py           # Descriptive report on LIWC-22's own scores
 │   ├── liwc_validation_report.py  # Custom scorer vs LIWC-22 comparison PDF
+│   ├── pandemic_period_analysis.py # Pre/during/post pandemic marker comparison
 │   ├── utils/                     # Shared utilities
 │   │   ├── CDS.py                 # Cognitive distortion schemata loader + scorer (gitignored)
-│   │   ├── thread_utils.py        # label_roles(), NLP helpers (tokenize, sentence stats, emoji)
+│   │   ├── thread_utils.py        # label_roles(), parse_post_dates(), entity stripping, NLP helpers
 │   │   ├── absolutist.py          # Dutch absolutist word list + scoring functions
 │   │   └── spinner.py             # Animated terminal spinner for long-running steps
 │   └── app.py                     # Streamlit dashboard
 │
 ├── scripts/                       # One-off diagnostic and inspection utilities
+│   ├── export_to_excel.py         # Export messages + topics to .xlsx (final deliverable only)
 │   ├── find_moderators.py         # Identify moderator posters → output/moderator_review.csv
 │   ├── inspect_short_messages.py  # Print low-word-count messages for manual review
 │   ├── reply_distribution.py      # Per-user reply counts and self-reply rates
@@ -176,7 +179,7 @@ PYTHONPATH=./src python src/run_ingestion.py
 
 ### Step 2 — preprocess.py
 
-Reads from `data/messages.csv` (default) or one of the three dataset files written by step 1. Runs HTML stripping, date parsing, superuser and moderator removal, text standardization, word-count filtering, ID anonymization, and NER-based text anonymization. Writes all output to `output/preprocessed/`.
+Reads from `data/messages.csv` (default) or one of the three dataset files written by step 1. Runs HTML stripping, date parsing (tolerant of the two export timestamp formats), superuser and moderator removal, text standardization, word-count filtering, ID pseudonymization, and NER-based entity masking. Writes all output to `output/preprocessed/`.
 
 **Single-export run:**
 ```bash
@@ -463,9 +466,11 @@ All pipeline settings are in [src/config.py](src/config.py). Key options:
 | `INTRO_GROUP_KEYWORDS` | see file | Group name substrings that mark off-topic/welcome groups |
 | `MIN_WORD_COUNT` | `5` | Minimum words for a message to be kept |
 | `MIN_POSTS_PER_USER` | `5` | Minimum total posts for a user to be included (applied in postprocess.py) |
-| `ANONYMIZE_TEXT` | `True` | Run NER-based text anonymization |
-| `REPLACE_ORIGINAL_TEXT` | `True` | Replace original text with anonymized version in output |
-| `EXPORT_ENTITY_REVIEW` | `True` | Write original vs anonymized text to a review CSV |
+| `PANDEMIC_CUTOFF_DATE` | `2020-03-11` | Pre/during boundary (WHO pandemic declaration) for pandemic_period_analysis.py |
+| `PANDEMIC_END_DATE` | `2022-03-23` | During/post boundary (end of most Dutch restrictions) |
+| `ANONYMIZE_TEXT` | `True` | Run NER-based text pseudonymization (entity masking) |
+| `REPLACE_ORIGINAL_TEXT` | `True` | Replace original text with the masked version in output |
+| `EXPORT_ENTITY_REVIEW` | `True` | Write original vs masked text to a review CSV |
 | `INTEGRATED_OLD_PATH` | `output/messages_old.csv` | Old-data slice produced by integrate_datasets.py |
 | `INTEGRATED_NEW_PATH` | `output/messages_new_only.csv` | New-data slice produced by integrate_datasets.py |
 | `INTEGRATED_COMBINED_PATH` | `output/messages_combined.csv` | Full merged dataset produced by integrate_datasets.py |
