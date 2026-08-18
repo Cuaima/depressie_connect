@@ -36,9 +36,9 @@ the same underlying dataset. The checklist form of the below is
 
 ## 3. Storage & access controls
 
-- **Raw data are never committed.** `data/` inputs, anonymization mapping files,
-  and entity-review CSVs are excluded via `.gitignore`. Verify before every push
-  that no raw `messages.csv`, mapping, or `*_entity_review*` file is staged.
+- **Raw data are never committed.** `data/` inputs, the pseudonymization mapping
+  files, and entity-review CSVs are excluded via `.gitignore`. Verify before every
+  push that no raw `messages.csv`, mapping, or `*_entity_review*` file is staged.
 - Analysis runs locally against the researcher's copy of the restricted data.
 - **Right to erasure** is handled upstream by the data owner (see `ETHICS.md`
   B.4); this repo holds only a working copy and retains no data beyond the
@@ -47,19 +47,28 @@ the same underlying dataset. The checklist form of the below is
   It is identified by its date range and raw row counts, logged in the
   preprocessing report after a real-data run.
 
-## 4. Anonymization (two layers)
+## 4. Pseudonymization (two layers)
 
-1. **ID pseudonymization** — `PosterID` values are pseudonymous; superuser
-   (test/demo) and confirmed-moderator accounts are excluded in `preprocess.py`.
-2. **Text anonymization** — NER-based entity replacement
-   (`custom_text_anonymizer`, spaCy `nl_core_news_lg`) rewrites persons, places,
-   works, etc. as `[ENTITY_*]` placeholders in `MessageText`. This is a **loud**
-   dependency: if the anonymizer is unavailable the pipeline raises rather than
-   emitting un-anonymized text.
-   - Placeholders are kept in the stored text (they *are* the anonymization) but
-     are **stripped before any scoring/tokenization** so they cannot leak into
+The data are treated as **pseudonymized, not anonymized**: free text can still
+carry identifying detail that no automatic step is guaranteed to catch, so
+complete anonymity is not claimed and the data remain personal data under GDPR
+and the data-sharing agreement.
+
+1. **ID pseudonymization** — `PosterID` values are replaced with pseudonyms
+   through a stored mapping; superuser (test/demo) and confirmed-moderator
+   accounts are excluded in `preprocess.py`.
+2. **Text pseudonymization** — NER-based entity replacement (the
+   `custom_text_anonymizer` module, spaCy `nl_core_news_lg`) rewrites persons,
+   places, works, etc. as `[ENTITY_*]` placeholders in `MessageText`. This is a
+   **loud** dependency: if the component is unavailable the pipeline raises
+   rather than emitting text with its entities un-masked.
+   - Placeholders are kept in the stored text (they carry the masking) but are
+     **stripped before any scoring/tokenization** so they cannot leak into
      LIWC counts or word frequencies (`utils/thread_utils.strip_entity_placeholders`;
      see `statistical_decisions.md` §5).
+
+*(The code module is named `custom_text_anonymizer` for historical reasons; the
+process it performs is pseudonymization as described above.)*
 
 ## 5. Analysis-integrity commitments
 

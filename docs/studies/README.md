@@ -19,7 +19,6 @@ anchor.
 | `ahani.pdf` | Social Support Detection as an NLP task (psycholinguistic + sentiment features) | `src/build_classification_dataset.py`, `src/postvscomment/` |
 | `lib_jmir-2023-1-e51712.pdf` | Chatbots for emotional support across cultures | Report-only |
 | `lib_peerj-cs-2828.pdf` | DRIVE-model mental-health detection in text during COVID-19 | Report-only (secondary context for the pandemic-period section) |
-| `dorien.pdf` | **Duplicate** of `Smit qual evaluation depressie connect.pdf` (identical content) | — consider deleting |
 
 ---
 

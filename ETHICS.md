@@ -5,7 +5,7 @@
 > ## Scope of this repository
 >
 > **This repository is the *descriptive psycholinguistic analysis* pipeline for
-> Depression Connect** — text cleaning/anonymization, CDS prevalence, LIWC and
+> Depression Connect** — text cleaning/pseudonymization, CDS prevalence, LIWC and
 > LIWC-22 scoring, absolutist-word and first-person-pronoun markers, and the
 > pandemic-period comparison. It **trains no model, makes no per-user
 > prediction, and is not deployed.**

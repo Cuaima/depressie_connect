@@ -88,9 +88,9 @@ Introduction threads and recreational groups (poetry, word games, off-topic chat
 **What:** Analysis scripts read from `output/messages_structured.csv` (written by `postprocess.py`), not from `output/preprocessed/messages_community.csv` (written by `preprocess.py`).
 
 **Why:**  
-`messages_community.csv` contains all messages that passed language detection and anonymisation, including intro/welcome groups and single-post users. `messages_structured.csv` additionally has the group exclusions (§4), the user threshold (§3), thread structure flags (`is_initial_post`, `reply_index`, `thread_has_replies`), and the normalised text column (`text_normalized`). Using the structured file ensures every analysis script operates on the same, consistently filtered population.
+`messages_community.csv` contains all messages that passed language detection and pseudonymisation, including intro/welcome groups and single-post users. `messages_structured.csv` additionally has the group exclusions (§4), the user threshold (§3), thread structure flags (`is_initial_post`, `reply_index`, `thread_has_replies`), and the normalised text column (`text_normalized`). Using the structured file ensures every analysis script operates on the same, consistently filtered population.
 
-**Anonymization placeholders are stripped before analysis.** NER anonymization replaces entities with placeholders like `[ENTITY_PERSON_1]`. These stay in the stored `MessageText` (they are the anonymization) but are removed before any scoring or tokenization — both in `text_normalized` (postprocess) and at text load in every analysis script (`utils/thread_utils.strip_entity_placeholders`). Left in, they tokenize into words (`of`, `work`, `art`) that inflate LIWC function-word scores, word counts, and word-frequency charts.
+**Pseudonymization placeholders are stripped before analysis.** NER-based text masking replaces entities with placeholders like `[ENTITY_PERSON_1]`. These stay in the stored `MessageText` (they carry the masking) but are removed before any scoring or tokenization — both in `text_normalized` (postprocess) and at text load in every analysis script (`utils/thread_utils.strip_entity_placeholders`). Left in, they tokenize into words (`of`, `work`, `art`) that inflate LIWC function-word scores, word counts, and word-frequency charts.
 
 ---
 

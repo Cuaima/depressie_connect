@@ -56,7 +56,7 @@ scripts (regenerated 2026-08-18 on the final config):
   load. Missingness is not otherwise imputed.
 - **Sensitive content?** Yes — first-person accounts of depression and related
   distress from vulnerable individuals. Handled under the storage and
-  anonymization rules in `DATA_GOVERNANCE.md`.
+  pseudonymization rules in `DATA_GOVERNANCE.md`.
 
 ## 3. Collection process
 
@@ -87,9 +87,11 @@ Applied by `preprocess.py` then `postprocess.py` (rationale in
   (`INTRO_GROUP_KEYWORDS`).
 - **Quality filters:** messages shorter than `MIN_WORD_COUNT = 5` words dropped;
   users with fewer than `MIN_POSTS_PER_USER = 5` total posts excluded.
-- **Anonymization (two layers):** pseudonymous author IDs; NER-based text
-  anonymization (spaCy `nl_core_news_lg`) replacing entities with `[ENTITY_*]`
-  placeholders. Placeholders remain in stored text but are **stripped before any
+- **Pseudonymization (two layers):** author IDs replaced with pseudonyms via a
+  stored mapping; NER-based text masking (spaCy `nl_core_news_lg`) replacing
+  entities with `[ENTITY_*]` placeholders. The data are pseudonymized, not
+  anonymized (free text may still identify; see `DATA_GOVERNANCE.md` §4).
+  Placeholders remain in stored text but are **stripped before any
   scoring/tokenization** (`utils/thread_utils.strip_entity_placeholders`).
 - **Normalization:** lowercased `text_normalized` column with whitespace and
   repeated-character normalization; placeholders removed.

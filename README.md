@@ -1,6 +1,6 @@
 # Depression Connect Project
 
-Research pipeline for processing and analysing Dutch depression forum data. The pipeline cleans raw forum exports, anonymizes user identifiers and message text using NER, structures threads, and extracts psycholinguistic features (LIWC) for downstream classification tasks.
+Research pipeline for processing and analysing Dutch depression forum data. The pipeline cleans raw forum exports, pseudonymizes user identifiers and masks entities in message text using NER, structures threads, and extracts psycholinguistic features (LIWC) for downstream classification tasks. The data are pseudonymized, not anonymized (see [docs/DATA_GOVERNANCE.md](docs/DATA_GOVERNANCE.md)).
 
 ## Project structure
 
@@ -223,7 +223,8 @@ All analysis scripts read from `output/messages_structured.csv` (the postprocess
 | `exploratory_analysis.py` | `messages_structured.csv` | `exploratory_report.pdf`, `cds_scores.csv`, `cds_per_user.csv` |
 | `cds_prevalence.py` | `messages_structured.csv` | `cds_prevalence_report.pdf`, `cds_category_ranking.csv`, `cds_phrase_ranking.csv` |
 | `liwc_analysis.py` | `messages_structured.csv` | `liwc_report.pdf`, `liwc_scores.csv`, `liwc_per_user.csv` |
-| `user_longitudinal.py` | `messages_structured.csv` | `user_longitudinal_report.pdf` |
+| `user_longitudinal.py` | `messages_structured.csv` | `user_longitudinal_report.pdf` (`--select sustained` → `user_longitudinal_sustained.pdf`) |
+| `scripts/export_to_excel.py` | `messages_structured.csv` | `export/forum_export*.xlsx` (final deliverable only) |
 | `liwc22_cli_runner.py` *(optional)* | `messages_structured.csv` | `liwc22_scores.csv` |
 | `liwc22_report.py` *(optional)* | `liwc22_scores.csv` | `liwc22_report.pdf` — descriptive report on LIWC-22's own scores (mirrors `liwc_report.pdf`) |
 | `liwc_validation_report.py` *(optional)* | `liwc_scores.csv` + `liwc22_scores.csv` | `liwc_validation_report.pdf`, `liwc_validation_comparison.csv` |
@@ -495,12 +496,12 @@ All pipeline settings are in [src/config.py](src/config.py). Key options:
 
 ## Ethical considerations
 
-This project processes data from a mental health support forum. See [ETHICS.md](ETHICS.md) for the full ethics checklist. In brief:
+This project processes data from a mental health support forum. See [ETHICS.md](ETHICS.md) and [docs/DATA_GOVERNANCE.md](docs/DATA_GOVERNANCE.md) for detail. The data are **pseudonymized, not anonymized**: free text can still carry identifying detail that no automatic step is guaranteed to catch, so complete anonymity is not claimed and the data remain personal data under GDPR. In brief:
 
-- All poster IDs are replaced with anonymous tokens (`user_N`)
-- Message text is processed through NER to replace names, locations, and contact details with placeholders
+- All poster IDs are replaced with pseudonymous tokens (`user_N`) via a stored mapping
+- Message text is processed through NER to mask names, locations, and contact details with placeholders
 - Raw data and all output files are excluded from version control via `.gitignore`
-- The anonymization mapping is stored separately and should be handled with care
+- The pseudonymization mapping is stored separately and should be handled with care
 
 ## Citation
 
