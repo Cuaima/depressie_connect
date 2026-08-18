@@ -33,6 +33,7 @@ import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf as pdf_backend
 
 from dataset_io import add_dataset_arg, variant_path, subtitle_for
+from utils.thread_utils import parse_post_dates
 from liwc22_cli_runner import (
     LIWC22_STRUCTURAL_COLS, LIWC22_SUMMARY_VARS,
     ROW_IDX_COL, POSTER_COL, DATE_COL,
@@ -86,15 +87,44 @@ def load_and_align(
     """
     Load both score files and return (custom_df, liwc22_df, custom_cats, liwc22_cats).
 
-    Alignment strategy: both files are derived from the same structured CSV
-    with the same dropna filter, so positional row order is identical.
-    _row_idx in liwc22_scores.csv is used as the merge key; custom_scores.csv
-    gets a matching integer key from its reset index.
+    Alignment strategy: rows are aligned on (PosterID, PostDate), which both
+    files carry per message, and the keys are verified row-by-row after
+    sorting. The files' _row_idx column must NOT be trusted as an alignment
+    key: label_roles() date-sorts the frame inside liwc22_cli_runner.py, so
+    _row_idx holds original pre-sort positions stored in date-sorted rows —
+    merging a fresh positional index against it scrambles every pair
+    (identical means, r ≈ 0; the bug shipped in the Jul/Aug validation
+    reports).
 
-    Raises ValueError if row counts differ (indicates a pipeline mismatch).
+    Raises (loud failure, no fallback) if:
+      - LIWC-22 split messages into Segment rows that can't be re-aggregated
+      - row counts differ after any aggregation
+      - (PosterID, PostDate) keys are duplicated or don't match row-by-row
+      - the 'function' category correlation lands below 0.95 after alignment
     """
-    custom_df = pd.read_csv(custom_path).reset_index(drop=True)
+    custom_df = pd.read_csv(custom_path)
     liwc22_df = pd.read_csv(liwc22_path)
+
+    # LIWC-22 may split long messages into multiple Segment rows. If so,
+    # aggregate back to one row per _row_idx (word-count-weighted mean for
+    # category columns) before any comparison.
+    if liwc22_df[ROW_IDX_COL].duplicated().any():
+        n_before = len(liwc22_df)
+        meta_cols = [c for c in liwc22_df.columns
+                     if c in (ROW_IDX_COL, POSTER_COL, DATE_COL, "ForumTopicID", "role")]
+        num_cols = [c for c in liwc22_df.columns if c not in meta_cols]
+        wc = liwc22_df["WC"].clip(lower=1)
+
+        weighted = liwc22_df[num_cols].mul(wc, axis=0)
+        weighted[ROW_IDX_COL] = liwc22_df[ROW_IDX_COL]
+        sums = weighted.groupby(ROW_IDX_COL).sum()
+        wsum = wc.groupby(liwc22_df[ROW_IDX_COL]).sum()
+        agg = sums.div(wsum, axis=0)
+        agg["WC"] = wsum  # total word count, not weighted mean
+
+        meta = liwc22_df[meta_cols].drop_duplicates(ROW_IDX_COL).set_index(ROW_IDX_COL)
+        liwc22_df = meta.join(agg).reset_index()
+        print(f"  Aggregated {n_before} LIWC-22 segment rows → {len(liwc22_df)} messages.")
 
     if len(custom_df) != len(liwc22_df):
         raise ValueError(
@@ -104,7 +134,35 @@ def load_and_align(
             "same messages_structured.csv without re-running postprocess.py between them."
         )
 
+    # Align on (PosterID, PostDate). Both files derive from the same
+    # date-sorted structured file, so a STABLE sort keeps rows that share a
+    # timestamp (e.g. one user posting twice in the same second) in identical
+    # relative order in both frames — they then pair correctly by position
+    # without needing a unique key. Duplicate (PosterID, PostDate) rows are
+    # therefore expected and fine; only a genuine row-order divergence is a bug.
+    key = [POSTER_COL, DATE_COL]
+    for name, d in (("custom", custom_df), ("liwc22", liwc22_df)):
+        d[DATE_COL] = parse_post_dates(d[DATE_COL])
+        if d[DATE_COL].isna().any():
+            raise ValueError(f"{name} scores contain unparseable PostDate values.")
+
+    custom_df = custom_df.sort_values(key, kind="mergesort").reset_index(drop=True)
+    liwc22_df = liwc22_df.sort_values(key, kind="mergesort").reset_index(drop=True)
+    assert (custom_df[POSTER_COL].values == liwc22_df[POSTER_COL].values).all() \
+        and (custom_df[DATE_COL].values == liwc22_df[DATE_COL].values).all(), \
+        "join verloor rijen"  # keys diverge row-by-row after sort
+
+    # Overwrite both keys positionally: alignment is now by verified row order.
     custom_df[ROW_IDX_COL] = custom_df.index
+    liwc22_df[ROW_IDX_COL] = liwc22_df.index
+
+    # Sanity: 'function' is high-prevalence in both scorers; if the join is
+    # right its correlation must be near-perfect.
+    if "liwc_function_pct" in custom_df.columns and "function" in liwc22_df.columns:
+        r = float(custom_df["liwc_function_pct"].corr(liwc22_df["function"]))
+        assert r > 0.95, f"nog steeds scheef: function r = {r:.4f}"
+        print(f"  Alignment check: function r = {r:.4f} ✓")
+
     custom_cats = _custom_cat_map(custom_df)
     liwc22_cats = _liwc22_cat_map(liwc22_df)
     return custom_df, liwc22_df, custom_cats, liwc22_cats
