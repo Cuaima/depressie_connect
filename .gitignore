@@ -1,6 +1,14 @@
 # VS Code settings
 .vscode/
 
+# liwc
+liwc15.dic
+
+# CDS (proprietary scoring data — do not publish)
+src/CDS.py
+src/utils/CDS.py
+scripts/CDS/
+
 # Refactring
 jic/
 
@@ -31,7 +39,10 @@ pip-wheel-metadata/
 
 # Data files and folders (exclude all data)
 data/
-output/
+# output/ : ignore its contents (CSVs, dictionaries, the preprocessed/ and
+# export/ subfolders), but allow committing the report PDFs.
+output/*
+!output/*.pdf
 datasets/
 raw_data/
 processed_data/
@@ -106,3 +117,11 @@ docker-compose.*.yml
 .idea/
 *.sublime-workspace
 *.sublime-project
+
+# Claude Code
+# Commit the shared project settings (settings.json carries the deny rules
+# that block reading data/ and output/ — a safety default for this repo).
+# Keep personal/local overrides out of version control.
+.claude/settings.local.json
+.claude/*.local.json
+docs/studies/*.pdf

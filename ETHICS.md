@@ -2,6 +2,29 @@
 
 [![Deon badge](https://img.shields.io/badge/ethics%20checklist-deon-brightgreen.svg?style=popout-square)](http://deon.drivendata.org/)
 
+> ## Scope of this repository
+>
+> **This repository is the *descriptive psycholinguistic analysis* pipeline for
+> Depression Connect** — text cleaning/pseudonymization, CDS prevalence, LIWC and
+> LIWC-22 scoring, absolutist-word and first-person-pronoun markers, and the
+> pandemic-period comparison. It **trains no model, makes no per-user
+> prediction, and is not deployed.**
+>
+> Sections **A–C** (collection, storage, analysis) apply directly and are
+> answered for this repo; see **[`docs/DATA_GOVERNANCE.md`](docs/DATA_GOVERNANCE.md)**
+> for the working detail.
+>
+> Sections **D (Modeling)** and **E (Deployment)** — along with item **C.6
+> (train/test leakage)** — describe the **separate thesis classifier**
+> (supportive-reply prediction), *not* this codebase. Their answers below are
+> retained for continuity but pertain to that project. The authoritative
+> treatment of modeling and deployment ethics is the thesis ELSA report
+> (Deliverable D6): `reporting/elsa.md` in the `dss_thesis` repository
+> (https://gitlab.com/Cuaima1/dss_thesis).
+>
+> The two projects share the same underlying dataset and data-sharing
+> agreement, so the A/B governance basis is common to both.
+
 ## A. Data Collection
  - [ ] **A.1 Informed consent**: If there are human subjects, have they given informed consent, where subjects affirmatively opt-in and have a clear understanding of the data uses to which they consent?
  - [ ] **A.2 Collection bias**: Have we considered sources of bias that could be introduced during data collection and survey design and taken steps to mitigate those?
@@ -24,10 +47,16 @@
  - [ ] **C.3 Honest representation**: Are our visualizations, summary statistics, and reports designed to honestly represent the underlying data?
  - [ ] **C.4 Privacy in analysis**: Have we ensured that data with PII are not used or displayed unless necessary for the analysis?
  - [ ] **C.5 Auditability**: Is the process of generating the analysis well documented and reproducible if we discover issues in the future?
- - [ ] **C.6 Data leakage prevention** (REFORMS 6a–6c): Have we verified that no information from the test set is used during training or model selection, and that each input feature is legitimate for the task and does not serve as a proxy shortcut? [^4]
+ - [ ] **C.6 Data leakage prevention** (REFORMS 6a–6c) — *N/A for this repo: no training or model selection occurs here; describes the thesis classifier.* Have we verified that no information from the test set is used during training or model selection, and that each input feature is legitimate for the task and does not serve as a proxy shortcut? [^4]
  - [ ] **C.7 Missing data reporting** (REFORMS 3f): Have we reported the extent of missing data, broken down by outcome class where applicable, and documented how missingness was handled (e.g., imputation methods, exclusion criteria) to allow others to assess potential biases introduced by missing data? [^5]
 
 ## D. Modeling
+
+> **Not applicable to this repository — no model is trained, selected, or
+> evaluated here.** The items below describe the thesis classifier
+> (supportive-reply prediction) and are answered in the thesis ELSA
+> (`reporting/elsa.md` in `dss_thesis`). Retained for continuity only.
+
  - [ ] **D.1 Proxy discrimination**: Have we ensured that the model does not rely on variables or proxies for variables that are unfairly discriminatory?
  - [ ] **D.2 Fairness across groups**: Have we tested model results for fairness with respect to different affected groups (e.g., tested for disparate error rates)?
  - [ ] **D.3 Metric selection**: Have we considered the effects of optimizing for our defined metrics and considered additional metrics?
@@ -37,6 +66,13 @@
  - [ ] **D.7 Hyperparameter transparency** (REFORMS 5e): Have we fully reported the hyperparameter search space, the selection procedure (e.g., grid search, random search, Bayesian optimization), and the final hyperparameter values chosen for the model to ensure that the optimization process itself does not constitute a hidden source of overfitting or cherry-picking? [^7]
 
 ## E. Deployment
+
+> **Not applicable to this repository — nothing here is deployed.** This is an
+> offline research analysis producing reports and derived datasets, not a
+> production system. Deployment ethics (human-in-the-loop oversight, rollback,
+> drift, unintended use) are addressed in the thesis ELSA
+> (`reporting/elsa.md` in `dss_thesis`). Retained for continuity only.
+
  - [ ] **E.1 Redress**: Have we discussed with our organization a plan for response if users are harmed by the results (e.g., how does the data science team evaluate these cases and update analysis and models to prevent future harm)?
  - [ ] **E.2 Roll back**: Is there a way to turn off or roll back the model in production if necessary?
  - [ ] **E.3 Concept drift**: Do we test and monitor for concept drift to ensure the model remains fair over time?
