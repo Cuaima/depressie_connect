@@ -68,8 +68,11 @@ scripts (regenerated 2026-08-18 on the final config):
   forum database and shared under agreement; not scraped or re-collected by the
   researcher. The **new** export's extraction date is ≈ its handover (6 March
   2026; content runs to 30 March 2026). The **old** export's extraction date is
-  not yet confirmed — its content ends 5 Oct 2022, so the snapshot is ~late 2022;
-  the exact date may be recorded in the Smit papers.
+  ~late 2022, inferred from its content ending 5 Oct 2022; it is **not** recorded
+  in the Smit papers, whose extractions cluster around 2020 (the quantitative
+  survey data were extracted 24 Sept 2020). The Smit papers do corroborate the
+  start of the corpus: the forum "launched in mid-2019", matching the old data's
+  first message on 19 June 2019.
 - **Handover dates.** Old export handed to the researcher on **31 October 2025**;
   new export on **6 March 2026**.
 - **Sampling / completeness.** Each export is intended as complete forum content,

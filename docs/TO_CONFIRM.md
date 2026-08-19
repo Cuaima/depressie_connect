@@ -29,8 +29,12 @@ straight in.
 
 - [~] **Export dates & extraction method.** New export: extraction ≈ its
   handover date, 6 March 2026 (content runs to 30 March 2026). Old export:
-  extraction date not yet confirmed — content ends 5 Oct 2022, so the snapshot
-  is ~late 2022; the exact extraction date may be recorded in the Smit papers.
+  extraction ~late 2022, inferred from content ending 5 Oct 2022. Checked the
+  Smit papers (2026-08-19): the old extraction date is **not** there — their
+  extractions cluster around 2020 (quant survey data extracted 24 Sept 2020) —
+  though they do confirm the forum "launched in mid-2019", matching the old
+  data's first message (19 June 2019). Only the old export's exact extraction
+  date remains open, to confirm with the data owner.
   → `DATASHEET.md` §3
 - [x] **Export completeness. ANSWERED.** Each export is intended as complete
   forum content, but the two are not perfectly consistent: they overlap
