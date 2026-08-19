@@ -3,14 +3,26 @@
 ### 2.1 Source and provenance
 
 The data come from Depression Connect, a Dutch-language online peer-support
-forum for people affected by depression. They were shared for research under a
-data-sharing agreement and were pseudonymized by the data owner before sharing.
-No new data were collected from participants for this project.
+forum for people affected by depression. The forum is owned by the Depressie
+Vereniging (the Dutch Depression Association); the platform is currently hosted,
+and its data collected, by the internet agency MEO on the association's behalf.
+The platform was developed with funding from a ZonMw grant (PI: Prof. Jan
+Spijker) and is now funded by the association. The data were shared for research
+under a data-sharing agreement and were pseudonymized by the data owner before
+sharing. No new data were collected from participants for this project.
 
-Some provenance facts are still being confirmed with the supervisors and are
-left as placeholders here: [TO CONFIRM: data owner legal entity], [TO CONFIRM:
-consent basis for research use], and [TO CONFIRM: export and handover dates].
-These are tracked in `docs/TO_CONFIRM.md`.
+Research use of the forum content rests on consent given at registration: users
+agree on sign-up that their data may be used for research, through a passive
+consent form that also carries the platform's terms of use. There is therefore no
+separate ethics approval for this dataset, and none was required.
+
+Both exports were produced by the platform side from the live forum database,
+not scraped. The legacy export was pulled when the original platform host's
+contract ended and was handed over on 31 October 2025; its content runs to
+5 October 2022. The newer export was pulled via MEO and handed over on 6 March
+2026, with content to 30 March 2026. The exact extraction date of the legacy
+export is not on record; remaining open items are tracked in
+`docs/TO_CONFIRM.md`.
 
 ### 2.2 Variants
 

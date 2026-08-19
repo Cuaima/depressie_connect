@@ -8,33 +8,52 @@ the report's dataset section. Bring this list to the meeting.
 Each item notes where it currently sits in the docs so the answer can be dropped
 straight in.
 
+*Answers below marked **ANSWERED** come from supervisor correspondence with
+Janna, 19 August 2026.*
+
 ## Data provenance & agreement
 
-- [ ] **Legal entity of the data owner.** Currently written as "the platform
-  organization (inferred: Dutch Depression Association / Pro Persona ecosystem)".
-  What is the exact organization name to cite?
+- [x] **Legal entity of the data owner. ANSWERED.** The **Depressie Vereniging**
+  (the Dutch Depression Association), an association, owns the data. **MEO**
+  (<https://wijzijnmeo.nl>, an internet agency) currently hosts the platform and
+  collects the data on the association's behalf — i.e. processor, not owner.
+  The earlier "Pro Persona ecosystem" inference was wrong as an ownership claim:
+  the link is through Prof. Jan Spijker, PI of the grant that funded the
+  platform's development, not through ownership. *Minor residual:* Janna gives
+  the association as owner "as far as I'm aware" and referred the exact legal
+  name to Dorien — confirm the registered name before final submission.
   → `DATASHEET.md` §1, `DATA_GOVERNANCE.md` §1
-- [ ] **Consent basis.** Under what basis may forum users' content be used for
-  research (e.g. platform terms of service, broad consent at registration,
-  specific ethics approval)?
+- [x] **Consent basis. ANSWERED.** Consent is given **at registration**: when
+  users sign up for the platform they agree that their data may be used for
+  research. This is covered by a passive consent form drafted by Dorien, which
+  also carries the platform's other terms and conditions of use. Consequently
+  **there is no separate ethics approval** for this dataset, and none was
+  required.
   → `DATASHEET.md` §3
-- [ ] **Redistribution & retention terms.** What exactly does the data-sharing
-  agreement permit/forbid for redistribution, and is there a required data
-  deletion date or retention limit?
+- [~] **Redistribution & retention terms.** Janna does not believe the agreement
+  imposes a required deletion date or retention limit, but this was explicitly
+  left as "we would have to check". **Still open:** read the signed agreement
+  text for redistribution and retention clauses before treating §6–§7 as final.
   → `DATASHEET.md` §6–§7, `ETHICS.md` B.3/B.4
-- [ ] **Funding source** (if any) behind the dataset/collection.
+- [x] **Funding source. ANSWERED.** Development of the Depression Connect
+  platform was funded by a **ZonMw grant**, with **Prof. Jan Spijker** as PI.
+  The Depressie Vereniging later took the platform over and funds it. No separate
+  funding attaches to the research use of the data.
   → `DATASHEET.md` §1
 
 ## Collection process
 
-- [~] **Export dates & extraction method.** New export: extraction ≈ its
-  handover date, 6 March 2026 (content runs to 30 March 2026). Old export:
+- [~] **Export dates & extraction method.** *Method ANSWERED:* the **old**
+  export was pulled **when the original platform host's contract ended**; the
+  **new** export was pulled **via MEO**, the current host. Both are database
+  exports by the platform side, not scrapes. *Dates:* new export extraction
+  ≈ its handover date, 6 March 2026 (content runs to 30 March 2026). Old export
   extraction ~late 2022, inferred from content ending 5 Oct 2022. Checked the
   Smit papers (2026-08-19): the old extraction date is **not** there — their
   extractions cluster around 2020 (quant survey data extracted 24 Sept 2020) —
   though they do confirm the forum "launched in mid-2019", matching the old
-  data's first message (19 June 2019). Only the old export's exact extraction
-  date remains open, to confirm with the data owner.
+  data's first message (19 June 2019). **Still open:** the old export's exact
+  extraction date, which would be the date the original host's contract ended.
   → `DATASHEET.md` §3
 - [x] **Export completeness. ANSWERED.** Each export is intended as complete
   forum content, but the two are not perfectly consistent: they overlap

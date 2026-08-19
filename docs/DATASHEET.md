@@ -9,8 +9,10 @@ and the ethics checklist ([`../ETHICS.md`](../ETHICS.md)).
 
 > **Items marked `⚠ TO CONFIRM` could not be verified from the repository
 > alone** (they concern collection facts held by the data owner) and should be
-> checked with the platform organization / Julian before this datasheet is
-> treated as final.
+> checked with the platform organization before this datasheet is treated as
+> final. Most such items were answered in supervisor correspondence with Janna
+> on 19 August 2026 and are now written in below; the remaining open items are
+> tracked in [`TO_CONFIRM.md`](TO_CONFIRM.md).
 
 ---
 
@@ -21,11 +23,17 @@ and the ethics checklist ([`../ETHICS.md`](../ETHICS.md)).
   (CDS), LIWC psycholinguistic markers, absolutist and first-person-pronoun
   use, and change across pandemic periods. The corpus also underpins a separate
   thesis on predicting supportive peer responses.
-- **Who created and funded it?** The forum data are owned by the platform
-  organization (⚠ TO CONFIRM exact legal entity — inferred as the Dutch
-  Depression Association / Pro Persona ecosystem from affiliated Smit et al.
-  publications). Research use is by Claudia Yáñez (Tilburg University, MSc Data
-  Science & Society) under a data-sharing agreement. ⚠ TO CONFIRM funding source.
+- **Who created and funded it?** The forum data are owned by the **Depressie
+  Vereniging** (the Dutch Depression Association), an association; **MEO**
+  (<https://wijzijnmeo.nl>, an internet agency) currently hosts the platform and
+  collects the data on the association's behalf, as processor rather than owner.
+  Development of the Depression Connect platform was funded by a **ZonMw grant**
+  with **Prof. Jan Spijker** as principal investigator; the Depressie Vereniging
+  subsequently took the platform over and funds it. Research use is by Claudia
+  Yáñez (Tilburg University, MSc Data Science & Society) under a data-sharing
+  agreement; no separate funding attaches to that research use.
+  *(Confirmed 19 Aug 2026; the exact registered legal name of the association is
+  the one remaining detail to verify — see `TO_CONFIRM.md`.)*
 
 ## 2. Composition
 
@@ -64,13 +72,16 @@ scripts (regenerated 2026-08-18 on the final config):
 
 ## 3. Collection process
 
-- **How was the data acquired?** Exported by the platform owner from the live
+- **How was the data acquired?** Exported by the platform side from the live
   forum database and shared under agreement; not scraped or re-collected by the
-  researcher. The **new** export's extraction date is ≈ its handover (6 March
+  researcher. The **old** export was pulled **when the original platform host's
+  contract ended**; the **new** export was pulled **via MEO**, the current host.
+  The **new** export's extraction date is ≈ its handover (6 March
   2026; content runs to 30 March 2026). The **old** export's extraction date is
-  ~late 2022, inferred from its content ending 5 Oct 2022; it is **not** recorded
-  in the Smit papers, whose extractions cluster around 2020 (the quantitative
-  survey data were extracted 24 Sept 2020). The Smit papers do corroborate the
+  ~late 2022, inferred from its content ending 5 Oct 2022 (it would be the date
+  the original host's contract ended); it is **not** recorded in the Smit
+  papers, whose extractions cluster around 2020 (the quantitative survey data
+  were extracted 24 Sept 2020). The Smit papers do corroborate the
   start of the corpus: the forum "launched in mid-2019", matching the old data's
   first message on 19 June 2019.
 - **Handover dates.** Old export handed to the researcher on **31 October 2025**;
@@ -83,9 +94,13 @@ scripts (regenerated 2026-08-18 on the final config):
   This is a further reason main findings use the old variant and cap at 2022
   (§2).
 - **Consent.** No new data collected from participants; the owner pseudonymized
-  the data before sharing. ⚠ TO CONFIRM the consent basis under which forum
-  users' content may be used for research (e.g. platform terms of service /
-  broad consent at registration).
+  the data before sharing. Research use rests on **consent given at
+  registration**: on signing up for the platform, users agree that their data may
+  be used for research. This is covered by a passive consent form that also
+  carries the platform's other terms and conditions of use. Because consent is
+  obtained through platform registration in this way, **no separate ethics
+  approval** was sought for this dataset, and none was required.
+  *(Confirmed 19 Aug 2026.)*
 - **Time frame of collection.** Message timestamps span 2019–2026 (see §2).
   Handover: old export 31 Oct 2025, new export 6 March 2026 (above).
 
@@ -142,17 +157,20 @@ Applied by `preprocess.py` then `postprocess.py` (rationale in
   agreement and subject to GDPR; it is not deposited publicly and has no DOI.
 - **Version identification.** Identified by date range and raw row counts logged
   in the preprocessing report after a real-data run (no public DOI possible).
-- **IP / terms.** Owned by the platform organization, which retains ownership
-  during and after the project. ⚠ TO CONFIRM the precise redistribution and
-  retention terms of the agreement.
+- **IP / terms.** Owned by the Depressie Vereniging, which retains ownership
+  during and after the project. The agreement is not believed to impose specific
+  redistribution restrictions beyond academic-research-only use, but ⚠ TO CONFIRM
+  against the signed agreement text — this was left open in the 19 Aug 2026
+  correspondence ("we would have to check").
 
 ## 7. Maintenance
 
 - **Who maintains it here?** The researcher, for the duration of the project;
   the authoritative copy and any erasure requests are handled by the data owner
   (`ETHICS.md` B.4).
-- **Retention.** Not retained beyond the research scope. ⚠ TO CONFIRM a specific
-  deletion date/plan with the data owner.
+- **Retention.** Not retained beyond the research scope. No required deletion
+  date or retention limit is believed to be imposed by the agreement, but this
+  was left open on 19 Aug 2026 and ⚠ TO CONFIRM against the agreement text.
 - **Will it be updated?** Possibly, if a further export is supplied — it would be
   integrated as an additional variant rather than overwriting existing ones.
 

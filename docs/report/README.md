@@ -17,8 +17,11 @@ outputs. The `old` variant is the primary source of evidence; `combined` and
 
 ## Open items before this is final
 
-- Resolve the `TO CONFIRM` placeholders (see `docs/TO_CONFIRM.md`): data owner
-  legal entity, consent basis, export dates, and the analysis end-date scope.
+- Resolve the remaining `TO CONFIRM` items (see `docs/TO_CONFIRM.md`). Owner
+  entity, consent basis, funding, extraction method and the analysis end-date
+  scope are now settled and written into §2.1; still open are the agreement's
+  redistribution/retention terms, the legacy export's exact extraction date, and
+  the association's exact registered legal name.
 - Decide the final assembly format and length (Word or PDF, and whether it should
   match the D2/D5 portfolio template).
 - Figures are referenced by report section; when assembling the final document,

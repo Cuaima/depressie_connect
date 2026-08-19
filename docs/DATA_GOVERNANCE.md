@@ -14,15 +14,24 @@ the same underlying dataset. The checklist form of the below is
 
 ## 1. Data provenance & legal basis
 
-- **Source:** Depression Connect, a Dutch-language peer-support forum managed by
-  a mental health organization (the Dutch Depression Association / Pro Persona
-  ecosystem).
+- **Source:** Depression Connect, a Dutch-language peer-support forum owned by
+  the **Depressie Vereniging** (the Dutch Depression Association). The platform
+  is currently hosted and the data collected by **MEO**
+  (<https://wijzijnmeo.nl>, an internet agency) on the association's behalf —
+  processor, not owner. The platform's development was funded by a **ZonMw
+  grant** (PI: Prof. Jan Spijker); the association later took it over and funds
+  it. *(Confirmed with Janna, 19 Aug 2026; exact registered legal name of the
+  association still to be verified — `DATASHEET.md` §1, `TO_CONFIRM.md`.)*
 - **Agreement:** obtained under a formal data-sharing agreement between Tilburg
-  University and the platform organization, for academic research only. The data
-  owner retains ownership during and after the project.
+  University and the data owner, for academic research only. The data owner
+  retains ownership during and after the project.
 - **Consent & approval:** no new data were collected from human participants.
-  The data owner pseudonymized the data before sharing (direct identifiers
-  removed). No additional ethical approval was required under these conditions.
+  Research use rests on **consent given at platform registration** — users agree
+  on sign-up that their data may be used for research, via a passive consent form
+  that also carries the platform's terms and conditions of use. Because consent
+  is obtained this way, **no separate ethics approval** exists for this dataset
+  and none was required. The data owner pseudonymized the data before sharing
+  (direct identifiers removed).
 - **Legal regime:** the data remain sensitive mental-health content from
   vulnerable individuals and stay subject to GDPR obligations and the agreement
   terms even after pseudonymization.
@@ -108,5 +117,12 @@ sections D and E (marked N/A here) and `dss_thesis/reporting/elsa.md`.
 
 ## 8. Open governance items
 
-- `docs/DATASHEET.md` (Gebru et al. "Datasheets for Datasets") is **not yet
-  written** for this repo; `ETHICS.md` A.6 / footnote 2 anticipate it.
+- `docs/DATASHEET.md` (Gebru et al. "Datasheets for Datasets") is **written**
+  and satisfies `ETHICS.md` A.6 / footnote 2.
+- **Redistribution & retention terms** of the data-sharing agreement are not yet
+  verified against the signed text (`ETHICS.md` B.3/B.4, `DATASHEET.md` §6–§7).
+  No deletion date or retention limit is believed to be imposed, but this is
+  unconfirmed.
+- Two provenance details remain open: the legacy export's exact extraction date
+  and the data owner's exact registered legal name. Tracked in
+  [`TO_CONFIRM.md`](TO_CONFIRM.md).
