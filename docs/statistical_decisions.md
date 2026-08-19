@@ -128,6 +128,14 @@ These distributions are right-skewed (a few very long posts, a few emoji-heavy u
 
 ## 9. Pandemic-period comparison: per-user Kruskal-Wallis, not corpus log-likelihood
 
+> **Scope note (2026-08-19): this analysis is exploratory only.** The project
+> scope was capped at 2022 with the `old` variant as the basis for all main
+> findings, because message source and calendar time are confounded past 2022
+> (the "post" period is almost entirely the new export). The pandemic comparison
+> requires the post-2022 data, so it cannot be a source of reported findings; it
+> is retained as documented, exploratory context. No feature reaches significance
+> in the all-users omnibus in either variant regardless (see the results).
+
 **Where:** `pandemic_period_analysis.py`; period boundaries in `config.py` (`PANDEMIC_CUTOFF_DATE`, `PANDEMIC_END_DATE`)
 **What:** Psycholinguistic features (Yahya & Abdul Rahim 2023, §2.3: pronouns, function words, tenses, emotion, informal language, absolutist words) are compared across three pandemic periods.
 

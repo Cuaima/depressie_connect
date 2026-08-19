@@ -59,9 +59,12 @@ personal data under the data-sharing agreement and GDPR. The entity placeholders
 are removed before any scoring, so they cannot inflate word counts or dictionary
 matches.
 
-### 2.5 Scope note
+### 2.5 Scope: analysis capped at 2022
 
-The newer export extends the corpus to March 2026, later than the 2022 endpoint
-of related work on this forum. The choice of analysis end date is being settled
-with the supervisors ([TO CONFIRM: analysis end-date scope]); this report does
-not assume the full window or a capped window until that is decided.
+The newer export extends the corpus to March 2026, but message source and
+calendar time are confounded beyond 2022 (the old export covers the pre and
+during-pandemic years, the new export mostly the years after). The analysis is
+therefore capped at 2022 and based on the `old` variant, which runs from June
+2019 to October 2022. The `new_only` and `combined` variants, and any result
+that depends on the post-2022 period, are treated as exploratory context and are
+not sources of reported findings.

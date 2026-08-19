@@ -49,6 +49,10 @@ scripts (regenerated 2026-08-18 on the final config):
   — later than the thesis dataset (which ends Oct 2022). The `old` and `combined`
   variants therefore differ from the thesis's reported figures; do not cite
   thesis counts for this corpus.
+- **Scope decision (2026-08-19): analysis capped at 2022.** Because source and
+  time are confounded past 2022, main findings use the `old` variant (Jun 2019 –
+  Oct 2022); `new_only` and `combined` are exploratory context only. See
+  `TO_CONFIRM.md` and report §2.5.
 - **Labels?** No manually annotated labels in this repo (the supportive-reply
   annotation lives in the thesis project). Derived signals only: CDS category
   matches, LIWC scores, role (post/reply), pandemic period.

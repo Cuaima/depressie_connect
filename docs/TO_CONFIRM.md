@@ -36,13 +36,16 @@ straight in.
 - [ ] **Handover dates.** When were the exports handed to the researcher?
   → `DATASHEET.md` §3
 
-## Scope decision (research call, not a data-owner question)
+## Scope decision (research call, not a data-owner question) — RESOLVED
 
-- [ ] **Analysis end date.** The newer export extends the corpus to **March
-  2026**, ~3.5 years past the thesis dataset's Oct 2022 cutoff. Should the
-  analysis use the full window, or cap it (e.g. at 2022, or at the pandemic-end
-  boundary)? This affects every count and the pandemic comparison.
-  → `DATASHEET.md` §2, `statistical_decisions.md` §9
+- [x] **Analysis end date. DECIDED (2026-08-19): cap at 2022 — the `old`
+  variant is the basis for all main findings.** The newer export extends the
+  corpus to March 2026, but message source and calendar time are confounded
+  past 2022 (old ≈ pre/during, new ≈ post), so the analysis is scoped to the
+  legacy export, which runs Jun 2019 – Oct 2022. The `combined` and `new_only`
+  variants and anything depending on the post-2022 period (notably the pandemic
+  comparison) are exploratory context only, not sources of reported findings.
+  → `DATASHEET.md` §2, `statistical_decisions.md` §9, report §2
 
 ---
 
