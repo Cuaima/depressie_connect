@@ -83,7 +83,12 @@ Applied by `preprocess.py` then `postprocess.py` (rationale in
 `statistical_decisions.md` §3–§5):
 
 - **Account exclusions:** superuser accounts (test = 1, demo = 4) and their
-  posters removed; the two real communities (2, 3) retained.
+  posters removed. Both community sections are retained: account 2 (the
+  depression community) and account 3 (`naasten`, for relatives/companions).
+  The account marks the forum *section* a message was posted in, not the
+  poster's role — the same person can post in either — so the data cannot be
+  split into "depression" vs "relatives" users by account, and neither section
+  is excluded.
 - **Moderator exclusion:** 8 confirmed moderator UUIDs removed, including
   moderator-initiated threads (`config.MODERATOR_POSTER_IDS`; discovery via
   `scripts/find_moderators.py`).

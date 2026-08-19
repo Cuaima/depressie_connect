@@ -74,6 +74,11 @@ The threshold is set in `config.py` and applied once in `postprocess.py` so all 
 | Off-topic groups | `postprocess.py` | Threads in groups matching `INTRO_GROUP_KEYWORDS` (welcome, poems, off-topic, games, etc.) |
 | Low-activity users | `postprocess.py` | Users below `MIN_POSTS_PER_USER` (see §3) |
 
+**On the two community accounts (2 and 3) — both are retained.**
+The forum has two community sections: account 2 (`community.depressieconnect.nl`, for people with depression) and account 3 (`naasten.depressieconnect.nl`, for *naasten* — relatives and companions of people with depression). Only the test (1) and demo (4) accounts are excluded; both community sections stay in.
+
+The account marks the **forum section a message was posted in — its topic area — not the poster's role.** The same person can post in either section, so a message's account does not indicate whether its author has depression or is a relative. The data therefore cannot be split into "depression" vs "relatives" user populations by account, and neither section is excluded on that basis. Any write-up should describe the population as the peer-support community of this forum as a whole, not as "people with depression, relatives excluded."
+
 **Why moderators are excluded:**  
 Moderators post differently from community members by role: they welcome new users, enforce rules, and redirect conversations. Including them would conflate staff communication patterns with peer-to-peer support dynamics, which is the subject of the study.
 

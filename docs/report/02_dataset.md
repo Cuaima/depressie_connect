@@ -50,6 +50,14 @@ threads they opened, and introduction and recreational groups are removed.
 Messages under five words and users with fewer than five messages are dropped.
 The full rationale is in Section 4.2 and in `docs/statistical_decisions.md`.
 
+The forum has two community sections, one for people with depression and one for
+their relatives and companions (`naasten`). Both are retained. The section a
+message appears in marks its topic area, not the author's role: the same person
+can post in either section, so the account does not identify whether a message
+was written by someone with depression or by a relative. The population is
+therefore the peer-support community of this forum as a whole, and it is not
+split into "depression" and "relatives" groups.
+
 The data are treated as pseudonymized, not anonymized. Author identifiers are
 replaced with pseudonyms through a stored mapping, and named entities in the
 message text are replaced with placeholders using named-entity recognition.
