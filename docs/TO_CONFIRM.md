@@ -27,13 +27,21 @@ straight in.
 
 ## Collection process
 
-- [ ] **Export dates & extraction method.** When were the two exports (legacy
-  "old" and newer) pulled from the live forum, and how?
+- [~] **Export dates & extraction method.** New export: extraction ≈ its
+  handover date, 6 March 2026 (content runs to 30 March 2026). Old export:
+  extraction date not yet confirmed — content ends 5 Oct 2022, so the snapshot
+  is ~late 2022; the exact extraction date may be recorded in the Smit papers.
   → `DATASHEET.md` §3
-- [ ] **Export completeness.** Is each export intended as *complete* forum
-  content for its period, or a subset?
+- [x] **Export completeness. ANSWERED.** Each export is intended as complete
+  forum content, but the two are not perfectly consistent: they overlap
+  partially, and the new export's content from *before* the change of hands
+  appears to have been back-propagated and should not be relied on. This is
+  consistent with the observed data — the new export has almost no pre-2022
+  content (67 msgs in 2019, 140 in 2020, none in 2021) — and reinforces the
+  2022-cap / old-primary scope decision.
   → `DATASHEET.md` §3
-- [ ] **Handover dates.** When were the exports handed to the researcher?
+- [x] **Handover dates. ANSWERED.** Old export handed over **31 October 2025**;
+  new export handed over **6 March 2026** (coincides with its extraction).
   → `DATASHEET.md` §3
 
 ## Scope decision (research call, not a data-owner question) — RESOLVED

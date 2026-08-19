@@ -66,16 +66,25 @@ scripts (regenerated 2026-08-18 on the final config):
 
 - **How was the data acquired?** Exported by the platform owner from the live
   forum database and shared under agreement; not scraped or re-collected by the
-  researcher. ⚠ TO CONFIRM export dates and extraction method.
-- **Sampling.** Not a sample — the exports are intended as complete forum
-  content for the covered period, minus the exclusions in §4. ⚠ TO CONFIRM
-  completeness of each export.
+  researcher. The **new** export's extraction date is ≈ its handover (6 March
+  2026; content runs to 30 March 2026). The **old** export's extraction date is
+  not yet confirmed — its content ends 5 Oct 2022, so the snapshot is ~late 2022;
+  the exact date may be recorded in the Smit papers.
+- **Handover dates.** Old export handed to the researcher on **31 October 2025**;
+  new export on **6 March 2026**.
+- **Sampling / completeness.** Each export is intended as complete forum content,
+  but the two are not perfectly consistent. They overlap partially, and the new
+  export's content from *before the change of hands* appears to have been
+  back-propagated and is not reliable. This shows in the data: the new export has
+  almost no pre-2022 content (67 messages in 2019, 140 in 2020, none in 2021).
+  This is a further reason main findings use the old variant and cap at 2022
+  (§2).
 - **Consent.** No new data collected from participants; the owner pseudonymized
   the data before sharing. ⚠ TO CONFIRM the consent basis under which forum
   users' content may be used for research (e.g. platform terms of service /
   broad consent at registration).
-- **Time frame of collection.** Message timestamps span 2019–2026 (see §2);
-  the export/handover dates to the researcher are ⚠ TO CONFIRM.
+- **Time frame of collection.** Message timestamps span 2019–2026 (see §2).
+  Handover: old export 31 Oct 2025, new export 6 March 2026 (above).
 
 ## 4. Preprocessing / cleaning / labeling
 
