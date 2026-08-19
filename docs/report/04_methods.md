@@ -71,3 +71,25 @@ than one period, the analysis is run twice: once on all users and once
 restricted to users active in a single period. Divergence between the two runs
 indicates that multi-period users drive a result, and is reported where it
 occurs.
+
+### 4.7 Tooling and use of AI
+
+All text processing and statistics in this study are local and deterministic.
+Pseudonymization of named entities uses a Dutch spaCy model, cognitive distortion
+schemata are detected by dictionary matching, psycholinguistic scoring uses the
+LIWC-2015 Dutch dictionary and the licensed LIWC-22 desktop application, and
+tests are computed with standard scientific Python libraries. No language model
+takes part in producing any result reported here, and the analysis code makes no
+network calls, so message text does not leave the machine it is processed on.
+
+AI assistance (Claude, Anthropic) was used during development as a software and
+writing assistant: for the pipeline code, its test suite, and drafts of the
+documentation and of this report. All such output was reviewed by the researcher
+before use, and the researcher is responsible for the work; the analytical
+decisions and their justifications are recorded separately in
+`docs/statistical_decisions.md`. The AI tooling had no access to the forum data.
+The datasets are excluded from version control, and the repository carries
+committed tool-level rules denying reads of the data and output directories, so
+development proceeded against synthetic test fixtures rather than real messages.
+The full disclosure, including the limits of these controls, is in
+`docs/AI_USE.md`.

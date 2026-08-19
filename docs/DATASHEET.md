@@ -53,6 +53,10 @@ scripts (regenerated 2026-08-18 on the final config):
   with its pseudonymous author ID, thread ID, group ID, timestamp, and text.
   Thread structure flags (`is_initial_post`, `reply_index`, `reply_count`,
   `thread_has_replies`) are added in postprocessing.
+- **Raw structure of the two exports.** They differ: the old export is
+  relational (four CSVs), the new export is a flat bbPress dump with no lookup
+  tables and no account column. Documented, with diagrams, in
+  [`DATA_SCHEMA.md`](DATA_SCHEMA.md).
 - **Note on the date range.** The new export extends the corpus to **March 2026**
   — later than the thesis dataset (which ends Oct 2022). The `old` and `combined`
   variants therefore differ from the thesis's reported figures; do not cite
@@ -141,6 +145,35 @@ Applied by `preprocess.py` then `postprocess.py` (rationale in
   and first-person-pronoun markers, and the pandemic-period comparison.
 - **Also usable for / used elsewhere:** the thesis classifier (predicting
   supportive peer replies).
+- **Recommended use of the three variants.** Every analysis and report script
+  takes a `--dataset` flag and writes one output per variant, named by the
+  convention in `dataset_io.suffix`: `_old`, `_new_only`, and **no suffix for
+  `combined`**, which keeps the legacy filenames (e.g.
+  `messages_structured_old.csv`, `messages_structured_new_only.csv`,
+  `messages_structured.csv`). `preprocess.py` and `postprocess.py` follow the
+  same convention. The one exception is the integration step, which writes
+  bespoke names — `messages_old.csv`, `messages_new_only.csv`, and
+  `integrated_messages.csv` for combined (`dataset_io.integrated_input_path`).
+
+  **Anyone working with this corpus is advised to treat the old and the new
+  export as two different datasets** rather than one continuous corpus: they
+  come from different platform hosts, have different raw schemas
+  (`DATA_SCHEMA.md`), and their author identifiers are matched only
+  inferentially. The `combined` variant is provided for convenience and
+  completeness, but it is the least reliable of the three and should not carry a
+  claim on its own. In descending order of reliability:
+
+  1. **`old`** — internally consistent, relational, and the most thoroughly
+     verified; carries the section and group structure. All main findings in
+     this project rest on it.
+  2. **`new_only`** — internally consistent on its own terms, but flat: no
+     account/section information, and its pre-handover content is
+     back-propagated and unreliable (§3), so it is dependable mainly from 2022
+     onward.
+  3. **`combined`** — additionally depends on the behavioural ID bridge and on
+     cross-export deduplication, and confounds message source with calendar
+     time. Useful as context and for the confound diagnostics; treat any result
+     computed on it as exploratory.
 - **Uses to avoid.** Not for clinical risk screening or individual mental-health
   assessment; no demographic metadata exists, so no fairness analysis across
   protected groups is possible. Findings are bounded to this single Dutch-language

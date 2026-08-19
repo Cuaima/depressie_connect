@@ -31,6 +31,38 @@ pipeline builds three variants from them. The `old` variant is the legacy
 export. The `new_only` variant is the newer export with messages already present
 in the legacy export removed. The `combined` variant is their union.
 
+The two exports do not share a structure. The legacy export is a small
+relational database dump: four tables, in which messages belong to topics,
+topics to groups, and groups to a forum section, so a message can be traced to
+the section it was posted in and to the group hierarchy it sits under. Figure
+2.1 shows this schema. The newer export is a flat bbPress dump — one
+denormalized message table, split across files by year range, with the topic
+title repeated on every message and no lookup tables. It carries no section
+identifier at all, and its author identifiers are integers rather than the
+legacy export's UUIDs. The full comparison, and the reconciliation the pipeline
+performs, are documented in `docs/DATA_SCHEMA.md`.
+
+Two consequences matter for interpretation. First, because only the legacy
+export identifies forum sections, the section-level reasoning in Section 2.4
+applies to that export alone. Second, matching authors across the two exports is
+inferential rather than exact: the pipeline bridges legacy UUIDs to the newer
+integer identifiers by posting behaviour and only accepts high-confidence
+matches, so unmatched authors may appear under two identities. Per-user
+aggregation is therefore performed within a variant, never across the seam.
+
+For this reason, the recommendation to anyone reusing this corpus is to treat
+the legacy and the newer export as two different datasets rather than one
+continuous one. The pipeline still produces all three variants for every
+analysis, and the `combined` variant remains available should a merged view be
+wanted, but it is the least reliable of the three: it inherits the uncertainties
+of both exports and adds the author bridge, the cross-export deduplication, and
+the source-time confound on top. Reliability runs `old`, then `new_only`, then
+`combined`.
+
+**Figure 2.1.** Schema of the legacy export
+(`docs/schema_forum_database_old.pdf`). This diagram describes the legacy export
+only; the newer export has no equivalent structure.
+
 The `old` variant is treated as the primary source of evidence throughout this
 report. It covers the pre-pandemic and pandemic period and has been verified
 more thoroughly. The `new_only` and `combined` variants are reported as

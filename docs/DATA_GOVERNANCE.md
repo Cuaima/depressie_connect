@@ -38,8 +38,11 @@ the same underlying dataset. The checklist form of the below is
 
 ## 2. What this repository processes
 
-- Four relational CSVs (`accounts`, `groups`, `topics`, `messages`) covering
-  **10 Apr 2019 – 05 Oct 2022**.
+- **Old export:** four relational CSVs (`accounts`, `groups`, `topics`,
+  `messages`) covering **10 Apr 2019 – 05 Oct 2022**.
+- **New export:** flat bbPress message exports in `data/new/`, split by year
+  range, with no lookup tables and no account/section column. Schemas and their
+  reconciliation: [`DATA_SCHEMA.md`](DATA_SCHEMA.md).
 - Derived, filtered datasets (`messages_structured*.csv`) and analysis outputs
   (PDF reports, score CSVs, the Excel export).
 
@@ -49,6 +52,12 @@ the same underlying dataset. The checklist form of the below is
   files, and entity-review CSVs are excluded via `.gitignore`. Verify before every
   push that no raw `messages.csv`, mapping, or `*_entity_review*` file is staged.
 - Analysis runs locally against the researcher's copy of the restricted data.
+- **AI tooling is blocked from the data directories.** `.claude/settings.json`
+  is committed (not local-only) and denies `Read(data/**)`, `Read(output/**)`,
+  and `Read(jic/**)`, so the rules apply to every clone and session. Combined
+  with the `.gitignore` exclusions above, no forum content is reachable from the
+  repository. Full disclosure of where AI was and was not used, and the limits
+  of these controls: [`AI_USE.md`](AI_USE.md).
 - **Right to erasure** is handled upstream by the data owner (see `ETHICS.md`
   B.4); this repo holds only a working copy and retains no data beyond the
   research scope.
