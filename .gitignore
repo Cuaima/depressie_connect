@@ -39,7 +39,10 @@ pip-wheel-metadata/
 
 # Data files and folders (exclude all data)
 data/
-output/
+# output/ : ignore its contents (CSVs, dictionaries, the preprocessed/ and
+# export/ subfolders), but allow committing the report PDFs.
+output/*
+!output/*.pdf
 datasets/
 raw_data/
 processed_data/
